@@ -53,3 +53,7 @@ wrangler.toml.local
 
 # готовые сборки не храним в репозитории
 releases/
+
+# артефакты проверки расстановки
+tools/layout.png
+view_*.png
