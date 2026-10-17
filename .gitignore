@@ -1,0 +1,52 @@
+# ---------- Unity ----------
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+MemoryCaptures/
+Recordings/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+sysinfo.txt
+*.apk
+*.aab
+*.unitypackage
+*.app
+crashlytics-build.properties
+
+# ---------- IDE / OS ----------
+.idea/
+.vs/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ---------- Node ----------
+node_modules/
+npm-debug.log*
+.wrangler/
+.dev.vars
+wrangler.toml.local
+
+# ---------- Секреты (никогда не коммитить) ----------
+.private/
+.env
+.env.*
+*.ulf
+*.alf
+*.pem
+*.key

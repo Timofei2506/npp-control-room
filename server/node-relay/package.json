@@ -1,0 +1,13 @@
+{
+  "name": "npp-relay-lan",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LAN/self-hosted WebSocket room relay for NPP Control Room",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
