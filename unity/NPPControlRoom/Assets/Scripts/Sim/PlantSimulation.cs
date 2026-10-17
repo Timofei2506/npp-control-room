@@ -46,7 +46,7 @@ namespace NPP.Sim
         public float power;        // доля номинала, 1.0 = 100%
         public float rod;          // фактическое положение, 1 = введены
         public float rodTarget;
-        public int pumps;        // число работающих ГЦН
+        public int pumps;        // число включённых ГЦН (по выключателям)
         public int pumpsMask;    // независимые выключатели ГЦН (биты 0..2)
         public float valve;
         public float feed;
@@ -184,6 +184,8 @@ namespace NPP.Sim
         public double rodTarget;
         public int pumps;        // число работающих ГЦН
         public int pumpsMask;    // независимые выключатели ГЦН (биты 0..2)
+        public double[] pumpSpin = new double[3]; // фактические обороты каждого ГЦН, 0..1
+        public double pumpFlow = 1.0;             // суммарная доля расхода 0..1
         public double valve;
         public double feed;
         public bool feedAuto;
@@ -207,6 +209,8 @@ namespace NPP.Sim
             Tf = 600; Tc = 290; Pst = 6.0; Lvl = 50; W = 3000; Xe = 1; I = 1; pel = 0;
             rodTarget = RodRef; rod = RodRef;
             pumpsMask = 7; pumps = 3; valve = 0.9; feed = 1.0; feedAuto = true;
+            for (int i = 0; i < 3; i++) pumpSpin[i] = 1.0;
+            pumpFlow = 1.0;
             breaker = true; vent = false;
             scrammed = false; turbineTripped = false; coreDamage = false;
             scramReason = "";
@@ -250,7 +254,19 @@ namespace NPP.Sim
 
             int pumpCount = CountPumps(pumpsMask);
             pumps = pumpCount;
-            double pumpFrac = pumpCount / 3.0;
+
+            // ГЦН не останавливаются мгновенно: выбег ротора ~4 с, разгон ~2 с.
+            for (int i = 0; i < 3; i++)
+            {
+                bool on = (pumpsMask & (1 << i)) != 0;
+                double target = on ? 1.0 : 0.0;
+                double tau = on ? 2.0 : 4.0;
+                pumpSpin[i] += (target - pumpSpin[i]) * Math.Min(1.0, dt / tau);
+            }
+            double pumpFrac = (pumpSpin[0] + pumpSpin[1] + pumpSpin[2]) / 3.0;
+            pumpFlow = pumpFrac;
+            // расход ниже 2/3 номинала — сигнал «низкий расход» (по факту, а не по выключателям)
+            bool flowLow = pumpFrac < 0.6;
 
             // ---- авторегулятор питания ----
             if (feedAuto)
@@ -352,7 +368,7 @@ namespace NPP.Sim
             if (Lvl < 30) a |= (int)AlarmBits.LevelLow;
             if (Lvl < 15) a |= (int)AlarmBits.LevelLowLow;
             if (W > 3100) a |= (int)AlarmBits.Overspeed;
-            if (pumpCount < 2) a |= (int)AlarmBits.FlowLow;
+            if (flowLow) a |= (int)AlarmBits.FlowLow;
             if (rad > 1.0) a |= (int)AlarmBits.RadHigh;
             if (scrammed) a |= (int)AlarmBits.Scram;
             if (!breaker) a |= (int)AlarmBits.GenOffline;

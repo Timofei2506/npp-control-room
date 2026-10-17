@@ -1,3 +1,4 @@
+using NPP.Audio;
 using NPP.Core;
 using NPP.Room;
 using NPP.UI;
@@ -20,9 +21,11 @@ namespace NPP.Player
         float _vy;
 
         IInteractable _hover;
-        float _lastMouseX, _lastMouseY;
         bool _dragging;
         float _fovBase = 66f;
+        float _bobPhase;
+        float _bobAmount;
+        float _camBaseY;
 
         public bool InputLocked { get; set; }
 
@@ -49,6 +52,7 @@ namespace NPP.Player
             var camGo = new GameObject("Camera");
             camGo.transform.SetParent(transform, false);
             camGo.transform.localPosition = new Vector3(0f, eyeHeight, 0f);
+            _camBaseY = eyeHeight;
             _cam = camGo.AddComponent<Camera>();
             _cam.nearClipPlane = 0.03f;
             _cam.farClipPlane = 120f;
@@ -69,12 +73,16 @@ namespace NPP.Player
             }
 
             // ---- обзор ----
-            float mx = Input.GetAxis("Mouse X") * mouseSensitivity;
-            float my = Input.GetAxis("Mouse Y") * mouseSensitivity;
-            _yaw += mx;
-            _pitch = Mathf.Clamp(_pitch - my, -84f, 84f);
-            transform.localEulerAngles = new Vector3(0f, _yaw, 0f);
-            _cam.transform.localEulerAngles = new Vector3(_pitch, 0f, 0f);
+            // Во время перетаскивания ручки/рычага камера не крутится: рука занята.
+            if (!_dragging)
+            {
+                float mx = Input.GetAxis("Mouse X") * mouseSensitivity;
+                float my = Input.GetAxis("Mouse Y") * mouseSensitivity;
+                _yaw += mx;
+                _pitch = Mathf.Clamp(_pitch - my, -84f, 84f);
+                transform.localEulerAngles = new Vector3(0f, _yaw, 0f);
+                _cam.transform.localEulerAngles = new Vector3(_pitch, 0f, 0f);
+            }
 
             // ---- движение ----
             float h = Input.GetAxisRaw("Horizontal");
@@ -83,15 +91,14 @@ namespace NPP.Player
             if (move.sqrMagnitude > 1f) move.Normalize();
             float speed = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift) ? runSpeed : walkSpeed;
 
-            if (_cc.isGrounded)
-            {
-                _vy = -0.5f;
-                if (Input.GetKeyDown(KeyCode.Space)) _vy = 3.2f;
-            }
+            // Прыгать на пульты не нужно: шаг вверх (stepOffset) и так работает.
+            if (_cc.isGrounded) _vy = -0.5f;
             else _vy -= 9.81f * Time.deltaTime;
 
             Vector3 vel = move * speed + Vector3.up * _vy;
             _cc.Move(vel * Time.deltaTime);
+
+            UpdateWalk(move.magnitude * speed);
 
             // ---- приближение ----
             bool zoom = Input.GetMouseButton(1);
@@ -99,6 +106,35 @@ namespace NPP.Player
 
             // ---- взаимодействие ----
             UpdateInteract();
+        }
+
+        /// <summary>Покачивание камеры и шаги: шаг звучит на каждом полупериоде покачивания.</summary>
+        void UpdateWalk(float planarSpeed)
+        {
+            bool moving = _cc.isGrounded && planarSpeed > 0.15f;
+            if (!moving)
+            {
+                _bobAmount = Mathf.Lerp(_bobAmount, 0f, Time.deltaTime * 6f);
+                _cam.transform.localPosition = Vector3.Lerp(
+                    _cam.transform.localPosition,
+                    new Vector3(0f, _camBaseY, 0f),
+                    Time.deltaTime * 8f);
+                return;
+            }
+
+            float k = Mathf.Clamp01(planarSpeed / runSpeed);
+            _bobAmount = Mathf.Lerp(_bobAmount, 1f, Time.deltaTime * 5f);
+            float half = _bobPhase % Mathf.PI;
+            _bobPhase += Time.deltaTime * (6.2f + 3.2f * k);
+
+            // шаг — когда покачивание проходит нижнюю точку
+            if (_bobPhase % Mathf.PI < half)
+                SoundBank.Footstep(0.28f + 0.22f * k);
+
+            float amp = (0.012f + 0.020f * k) * _bobAmount;
+            float y = _camBaseY - Mathf.Abs(Mathf.Sin(_bobPhase)) * amp;
+            float x = Mathf.Sin(_bobPhase * 0.5f) * amp * 0.55f;
+            _cam.transform.localPosition = new Vector3(x, y, 0f);
         }
 
         void UpdateInteract()
@@ -119,19 +155,16 @@ namespace NPP.Player
             {
                 _hover.Click();
                 _dragging = true;
-                _lastMouseX = Input.mousePosition.x;
-                _lastMouseY = Input.mousePosition.y;
             }
 
             if (_dragging)
             {
+                // При захваченном курсоре Input.mousePosition не меняется — тянем по осям мыши.
                 if (Input.GetMouseButton(0) && _hover != null)
                 {
-                    float dx = Input.mousePosition.x - _lastMouseX;
-                    float dy = Input.mousePosition.y - _lastMouseY;
-                    if (Mathf.Abs(dx) + Mathf.Abs(dy) > 0.5f) _hover.Drag(new Vector2(dx, dy));
-                    _lastMouseX = Input.mousePosition.x;
-                    _lastMouseY = Input.mousePosition.y;
+                    float dx = Input.GetAxis("Mouse X") * 12f;
+                    float dy = Input.GetAxis("Mouse Y") * 12f;
+                    if (Mathf.Abs(dx) + Mathf.Abs(dy) > 0.01f) _hover.Drag(new Vector2(dx, dy));
                 }
                 if (!Input.GetMouseButton(0)) _dragging = false;
             }

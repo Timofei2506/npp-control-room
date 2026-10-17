@@ -13,7 +13,7 @@ function fresh() {
   return {
     t:0, P:1, C:P.B/(P.LAMBDA*P.LAM), Qd:0.07,
     Tf:600, Tc:290, Pst:6.0, Lvl:50, W:3000, Xe:1, I:1, Pel:0,
-    rod:P.RODREF, rodTarget:P.RODREF, pumps:3, pumpsMask:7,
+    rod:P.RODREF, rodTarget:P.RODREF, pumps:3, pumpsMask:7, pumpSpin:[1,1,1], pumpFlow:1,
     valve:3000/(P.KTURB*6.0), feed:1, feedAuto:true, breaker:true, vent:false,
     scrammed:false, turbineTripped:false, coreDamage:false, rad:0.1,
     alarms:0, rho:0, scramReason:''
@@ -27,7 +27,16 @@ function scram(s, why){ if(s.scrammed) return; s.scrammed=true; s.scramReason=wh
 function step(s, dt){
   if(dt<=0) return; if(dt>0.25) dt=0.25;
   s.t += dt;
-  const pumpFrac = s.pumps/3;
+  // выбег ротора ГЦН: ~6 с останов, ~2 с разгон
+  if(!s.pumpSpin){ s.pumpSpin=[1,1,1]; }
+  for(let i=0;i<3;i++){
+    const on = (s.pumpsMask & (1<<i)) !== 0;
+    const target = on?1:0, tau = on?2:4;
+    s.pumpSpin[i] += (target - s.pumpSpin[i])*Math.min(1, dt/tau);
+  }
+  const pumpFrac = (s.pumpSpin[0]+s.pumpSpin[1]+s.pumpSpin[2])/3;
+  s.pumpFlow = pumpFrac;
+  const flowLow = pumpFrac < 0.6;
 
   if(s.feedAuto){
     const steamFlow = (P.KTURB*s.Pst*(s.turbineTripped?0:s.valve))/P.Q0;
@@ -109,7 +118,7 @@ function step(s, dt){
   set(1<<2,s.Tf>800); set(1<<3,s.Tf>1000);
   set(1<<4,s.Pst>7.0); set(1<<5,s.Pst>8.5);
   set(1<<6,s.Lvl<30); set(1<<7,s.Lvl<15);
-  set(1<<8,s.W>3100); set(1<<9,s.pumps<2);
+  set(1<<8,s.W>3100); set(1<<9,flowLow);
   set(1<<10,s.rad>5); set(1<<11,s.scrammed);
   set(1<<12,!s.breaker); set(1<<13,s.turbineTripped); set(1<<14,s.coreDamage);
   s.alarms=al;
@@ -140,7 +149,7 @@ if(require.main===module){
   simulate('стержни 20%', (s,t)=>{ if(t>=30&&t<30.05) s.rodTarget=0.20; }, 300);
   simulate('SCRAM', (s,t)=>{ if(t>=30&&t<30.05&&!s.scrammed){ s.scrammed=true; s.turbineTripped=true; s.breaker=false; } }, 300);
   simulate('клапан 100%', (s,t)=>{ if(t>=30&&t<30.05) s.valve=1.0; }, 300);
-  simulate('ГЦН 0', (s,t)=>{ if(t>=30&&t<30.05) s.pumps=0; }, 300);
+  simulate('ГЦН 0', (s,t)=>{ if(t>=30&&t<30.05){ s.pumpsMask=0; s.pumps=0; } }, 400);
   simulate('питание 0', (s,t)=>{ if(t>=30&&t<30.05){ s.feedAuto=false; s.feed=0; } }, 300);
 }
 

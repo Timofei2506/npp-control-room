@@ -360,6 +360,7 @@ namespace UnityEngine
         public bool loop { get; set; }
         public float spatialBlend { get; set; }
         public float volume { get; set; }
+        public float pitch { get; set; }
         public AudioClip clip { get; set; }
         public bool isPlaying { get { return false; } }
         public void Play() { }

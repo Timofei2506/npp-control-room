@@ -14,7 +14,7 @@ namespace NPP.Audio
         static AudioSource _ambient;
         static AudioSource _siren;
 
-        static AudioClip _click, _toggle, _press, _knob, _buzzer, _clunk;
+        static AudioClip _click, _toggle, _press, _knob, _buzzer, _clunk, _step;
         static AudioClip _ambientClip, _sirenClip;
 
         static float _volume = 0.8f;
@@ -50,6 +50,11 @@ namespace NPP.Audio
             _knob = Make("knob", 0.02f, t => Noise(t) * Env(t, 0.001f, 0.012f) * 0.35f + Mathf.Sin(2f * Mathf.PI * 3300f * t) * Env(t, 0.001f, 0.008f) * 0.15f);
             _buzzer = Make("buzzer", 0.35f, t => Mathf.Sign(Mathf.Sin(2f * Mathf.PI * 330f * t)) * Env(t, 0.01f, 0.3f) * 0.22f);
             _clunk = Make("clunk", 0.22f, t => Mathf.Sin(2f * Mathf.PI * (90f - 200f * t) * t) * Env(t, 0.003f, 0.18f) * 0.7f + Noise(t) * Env(t, 0.002f, 0.05f) * 0.4f);
+
+            // шаг по бетонному полу: низкий удар + короткий шорох подошвы
+            _step = Make("step", 0.14f, t =>
+                Mathf.Sin(2f * Mathf.PI * 70f * t) * Env(t, 0.004f, 0.09f) * 0.45f
+              + Noise(t * 3f) * Env(t, 0.010f, 0.07f) * 0.22f);
 
             _ambientClip = Make("ambient", 8f, t =>
             {
@@ -137,6 +142,15 @@ namespace NPP.Audio
         public static void KnobTick() { OneShot(_knob, 0.5f); }
         public static void Buzzer() { OneShot(_buzzer, 1f); }
         public static void Clunk() { OneShot(_clunk, 0.9f); }
+
+        /// <summary>Шаг. pitch слегка меняется, чтобы шаги не звучали одинаково.</summary>
+        public static void Footstep(float volume)
+        {
+            if (_ui == null || _step == null) return;
+            _ui.pitch = 0.92f + UnityEngine.Random.value * 0.16f;
+            _ui.PlayOneShot(_step, Mathf.Clamp01(volume));
+            _ui.pitch = 1f;
+        }
 
         static void OneShot(AudioClip c, float vol)
         {
