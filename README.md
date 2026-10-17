@@ -30,7 +30,17 @@
 | Релей (LAN) | `server/node-relay` | Node.js-сервер для игры без интернета |
 | Прототип физики | `tools/sim-prototype/physics.js` | калибровочный прогон модели (node physics.js) |
 
-## Быстрый старт (одиночная игра)
+## Как получить игру
+
+Сборка живёт **в GitHub Actions**, локальный Unity не нужен:
+
+1. Один раз добавьте секреты `UNITY_EMAIL`, `UNITY_PASSWORD`, `UNITY_LICENSE`
+   (инструкция — [docs/CI.md](docs/CI.md)).
+2. Каждый пуш в `main` собирает exe; готовый архив — **Actions → Build Windows x64 →
+   Artifacts → NPPControlRoom-Windows-x64**. По тегу `v*` создаётся релиз.
+3. Распакуйте zip и запустите `NPPControlRoom.exe` (Windows x64).
+
+## Быстрый старт в редакторе (для правок кода)
 
 1. Установите **Unity 6 LTS** (6000.0.x) и модуль *Windows Build Support*.
 2. Откройте папку `unity/NPPControlRoom` через Unity Hub («Add project from disk»).

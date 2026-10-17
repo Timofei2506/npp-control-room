@@ -1,44 +1,176 @@
-name: Build Windows
+name: Build Windows x64
+
+# Сборка целиком в облаке: локальный Unity не нужен.
+# Результат — NPPControlRoom.exe в артефактах запуска (вкладка Actions),
+# по тегу v* дополнительно создаётся релиз с zip-архивом.
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    paths:
+      - "unity/**"
+      - ".github/workflows/build.yml"
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write   # нужно для создания релиза по тегу
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UNITY_PROJECT_PATH: unity/NPPControlRoom
+  UNITY_VERSION: 6000.0.58f1
 
 jobs:
-  build:
-    name: Unity ${{ matrix.targetPlatform }}
+  # ---------------------------------------------------------------------------
+  # Предполётная проверка: без лицензии Unity сборка невозможна.
+  # Если секретов нет — job падает с инструкцией, а не «зелёным» пустым билдом.
+  # ---------------------------------------------------------------------------
+  preflight:
+    name: Проверка секретов Unity
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        targetPlatform:
-          - StandaloneWindows64
+    steps:
+      - name: Проверить наличие лицензии
+        env:
+          LIC: ${{ secrets.UNITY_LICENSE }}
+          SERIAL: ${{ secrets.UNITY_SERIAL }}
+          EMAIL: ${{ secrets.UNITY_EMAIL }}
+          PASS: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          missing=""
+          [ -z "$EMAIL" ] && missing="$missing UNITY_EMAIL"
+          [ -z "$PASS" ]  && missing="$missing UNITY_PASSWORD"
+          if [ -z "$LIC" ] && [ -z "$SERIAL" ]; then missing="$missing UNITY_LICENSE(или_UNITY_SERIAL)"; fi
+
+          if [ -n "$missing" ]; then
+            echo "::error title=Нет лицензии Unity::Не заданы секреты:$missing"
+            {
+              echo "## Сборка не запущена: нет секретов Unity"
+              echo ""
+              echo "Добавьте в **Settings → Secrets and variables → Actions**:"
+              echo ""
+              echo "| Секрет | Что это |"
+              echo "|---|---|"
+              echo "| \`UNITY_EMAIL\` | почта аккаунта Unity |"
+              echo "| \`UNITY_PASSWORD\` | пароль (без спецсимволов) |"
+              echo "| \`UNITY_LICENSE\` | содержимое файла \`Unity_lic.ulf\` (Personal) |"
+              echo "| \`UNITY_SERIAL\` | серийный ключ (только Plus/Pro) |"
+              echo ""
+              echo "Как получить \`.ulf\` без установки Unity — см. \`docs/CI.md\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "Секреты на месте: $([ -n "$SERIAL" ] && echo 'Pro/Plus' || echo 'Personal')"
+
+  # ---------------------------------------------------------------------------
+  # Сборка
+  # ---------------------------------------------------------------------------
+  build:
+    name: Unity → Windows
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           lfs: true
 
-      - uses: actions/cache@v4
+      # Кэш Library ускоряет повторные сборки (первая — 15–25 мин, дальше 5–10).
+      - name: Cache Unity Library
+        uses: actions/cache@v4
         with:
-          path: unity/NPPControlRoom/Library
-          key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('unity/NPPControlRoom/Packages/packages-lock.json', 'unity/NPPControlRoom/ProjectSettings/ProjectVersion.txt') }}
+          path: ${{ env.UNITY_PROJECT_PATH }}/Library
+          key: Library-Win64-${{ hashFiles('unity/NPPControlRoom/Assets/**', 'unity/NPPControlRoom/Packages/**', 'unity/NPPControlRoom/ProjectSettings/**') }}
           restore-keys: |
-            Library-${{ matrix.targetPlatform }}-
-            Library-
+            Library-Win64-
 
       - name: Build
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
-          projectPath: unity/NPPControlRoom
-          targetPlatform: ${{ matrix.targetPlatform }}
+          projectPath: ${{ env.UNITY_PROJECT_PATH }}
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: StandaloneWindows64
+          # Наш метод: создаёт сцену, настраивает Player Settings (Mono2x) и собирает exe.
+          buildMethod: NPP.EditorTools.NPPBuildTools.BuildCI
           allowDirtyBuild: true
 
-      - uses: actions/upload-artifact@v4
+      - name: Проверить, что exe действительно собрался
+        run: |
+          set -euo pipefail
+          find build -maxdepth 3 -type f | head -50
+          exe=$(find build -name 'NPPControlRoom.exe' | head -1)
+          if [ -z "$exe" ]; then
+            echo "::error title=Пустая сборка::GameCI завершился, но NPPControlRoom.exe не найден"
+            exit 1
+          fi
+          echo "Найден: $exe"
+          ls -la "$(dirname "$exe")"
+
+      - name: Упаковать zip
+        run: |
+          set -euo pipefail
+          dir=$(dirname "$(find build -name 'NPPControlRoom.exe' | head -1)")
+          name="NPPControlRoom-${GITHUB_SHA::7}"
+          (cd "$dir" && zip -qr "$GITHUB_WORKSPACE/$name.zip" .)
+          ls -lh "$GITHUB_WORKSPACE/$name.zip"
+          echo "ZIP=$name.zip" >> "$GITHUB_ENV"
+
+      - name: Артефакт
+        uses: actions/upload-artifact@v4
         with:
-          name: NPP-${{ matrix.targetPlatform }}
-          path: build/${{ matrix.targetPlatform }}
-          retention-days: 14
+          name: NPPControlRoom-Windows-x64
+          path: ${{ env.ZIP }}
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Кратко в Summary
+        run: |
+          {
+            echo "## Сборка готова"
+            echo ""
+            echo "- zip: \`$ZIP\` ($(du -h "$ZIP" | cut -f1))"
+            echo "- коммит: \`${GITHUB_SHA::7}\`"
+            echo "- скачать: вкладка **Actions** → этот запуск → блок **Artifacts**"
+            echo ""
+            echo "Распакуйте и запустите \`NPPControlRoom.exe\` (Windows x64)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------
+  # Релиз по тегу v* (например: git tag v0.1.0 && git push --tags)
+  # ---------------------------------------------------------------------------
+  release:
+    name: Релиз
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Скачать артефакт
+        uses: actions/download-artifact@v4
+        with:
+          name: NPPControlRoom-Windows-x64
+
+      - name: Опубликовать релиз
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "*.zip"
+          generate_release_notes: true
+          body: |
+            Сборка Windows x64 из GitHub Actions.
+
+            1. Скачайте `NPPControlRoom-*.zip` и распакуйте.
+            2. Запустите `NPPControlRoom.exe`.
+            3. Меню: **ОДИНОЧНАЯ ИГРА**, либо **СОЗДАТЬ КОМНАТУ** / **ПРИСОЕДИНИТЬСЯ** для игры по сети.
+
+            Изменения — в автоматически сгенерированных заметках ниже.

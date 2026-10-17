@@ -39,16 +39,24 @@
 | Качество графики | `QualitySettings` (shadowDistance в GameManager) |
 | Разрешение/окно | `NPPBuildTools.ApplyPlayerSettings` |
 
-## Сборка через CI (GameCI)
+## Сборка в GitHub Actions (основной способ)
 
-В репозитории есть `.github/workflows/build.yml`. Он запускается вручную
-(*Actions → Build Windows → Run workflow*) и требует три секрета:
+Собирать локально не нужно. Каждый пуш в `main` запускает
+`.github/workflows/build.yml`: предпроверка секретов → сборка Unity в контейнере →
+zip → артефакт. По тегу `v*` дополнительно создаётся релиз.
 
-- `UNITY_LICENSE` — файл лицензии (.ulf) для Unity Personal/Pro;
-- `UNITY_EMAIL`, `UNITY_PASSWORD` — учётная запись Unity.
+1. Один раз добавить секреты `UNITY_EMAIL`, `UNITY_PASSWORD`, `UNITY_LICENSE`
+   (или `UNITY_SERIAL` для Plus/Pro) — как получить `.ulf`, см. **[docs/CI.md](CI.md)**.
+2. Actions → **Build Windows x64** → **Run workflow** (или просто push).
+3. Скачать **Artifacts → NPPControlRoom-Windows-x64**, распаковать, запустить `NPPControlRoom.exe`.
 
-Без секретов workflow упадёт на шаге активации — это нормально, локальная сборка не зависит от CI.
-Готовый артефакт `NPP-Windows` появится в разделе Artifacts запуска.
+Сборка идёт на Linux-раннере с бэкендом **Mono2x** — IL2CPP-тулчейн не требуется.
+Подробности, релизы и разбор ошибок CI — в [docs/CI.md](CI.md).
+
+## Сборка в редакторе (по желанию)
+
+Если Unity всё-таки есть под рукой — меню **NPP ▶ Собрать Windows x64** собирает тем же
+кодом, что и CI (`BuildCI`).
 
 ## Частые проблемы
 

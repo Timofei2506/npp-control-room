@@ -43,6 +43,9 @@ namespace UnityEditor
     public enum BuildTarget { StandaloneWindows64, StandaloneWindows, StandaloneLinux64 }
     public enum BuildOptions { None }
 
+    public enum BuildTargetGroup { Unknown, Standalone, Android, iOS, WebGL }
+    public enum ScriptingImplementation { Mono2x, IL2CPP, WinRTDotNET }
+
     public class PlayerSettings
     {
         public static string companyName { get; set; }
@@ -54,6 +57,7 @@ namespace UnityEditor
         public static bool resizableWindow { get; set; }
         public static bool runInBackground { get; set; }
         public static UnityEngine.ColorSpace colorSpace { get; set; }
+        public static void SetScriptingBackend(BuildTargetGroup group, ScriptingImplementation impl) { }
     }
 
     public class EditorBuildSettingsScene
@@ -120,5 +124,6 @@ namespace UnityEditor
     public static class BuildPipeline
     {
         public static UnityEditor.Build.Reporting.BuildReport BuildPlayer(UnityEditor.Build.BuildPlayerOptions opts) { return new UnityEditor.Build.Reporting.BuildReport(); }
+        public static UnityEditor.Build.Reporting.BuildReport BuildPlayer(string[] scenes, string location, UnityEditor.BuildTarget target) { return new UnityEditor.Build.Reporting.BuildReport(); }
     }
 }

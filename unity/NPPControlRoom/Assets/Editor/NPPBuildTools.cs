@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System;
 using System.IO;
 using UnityEditor;
 using UnityEditor.Build;
@@ -44,18 +45,10 @@ namespace NPP.EditorTools
         static void CreateMainScene()
         {
             Directory.CreateDirectory("Assets/Scenes");
-            Scene active = EditorSceneManager.GetActiveScene();
-            if (string.IsNullOrEmpty(active.path) && active.rootCount == 0 &&
-                !active.isDirty)
-            {
-                EditorSceneManager.SaveScene(active, ScenePath);
-            }
-            else
-            {
-                EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
-                Scene s = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-                EditorSceneManager.SaveScene(s, ScenePath);
-            }
+            // Никаких диалогов: в batchmode (GitHub Actions) вопрос «сохранить сцену?»
+            // означает зависшую сборку. Сцена пустая — всё содержимое строит Bootstrap.
+            Scene s = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            EditorSceneManager.SaveScene(s, ScenePath);
             AssetDatabase.Refresh();
             Debug.Log("[NPP] Создана сцена " + ScenePath);
         }
@@ -82,6 +75,43 @@ namespace NPP.EditorTools
             PlayerSettings.resizableWindow = true;
             PlayerSettings.runInBackground = true;
             PlayerSettings.colorSpace = ColorSpace.Linear;
+            // Mono2x собирается на Linux-раннере GitHub Actions без нативных тулчейнов.
+            PlayerSettings.SetScriptingBackend(BuildTargetGroup.Standalone, ScriptingImplementation.Mono2x);
+        }
+
+        /// <summary>
+        /// Сборка для GitHub Actions (game-ci/unity-builder, buildMethod):
+        ///   -buildPath <папка>  — куда положить билд (по умолчанию build/StandaloneWindows64).
+        /// Бросает исключение при ошибке, чтобы шаг Actions покраснел.
+        /// </summary>
+        public static void BuildCI()
+        {
+            string buildPath = ArgValue("-buildPath", "build/StandaloneWindows64");
+            Directory.CreateDirectory(buildPath);
+            Prepare();
+
+            string exe = Path.Combine(buildPath, "NPPControlRoom.exe");
+            var opts = new BuildPlayerOptions
+            {
+                scenes = new[] { ScenePath },
+                locationPathName = exe,
+                target = BuildTarget.StandaloneWindows64,
+                options = BuildOptions.None
+            };
+
+            BuildReport report = BuildPipeline.BuildPlayer(opts);
+            if (report.summary.result != BuildResult.Succeeded)
+                throw new Exception("[NPP] Сборка не удалась: " + report.summary.result);
+
+            Debug.Log("[NPP] CI build OK: " + exe + " (" + (report.summary.totalSize / (1024 * 1024)) + " МБ)");
+        }
+
+        static string ArgValue(string name, string fallback)
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length - 1; i++)
+                if (args[i] == name) return args[i + 1];
+            return fallback;
         }
 
         [MenuItem("NPP/Собрать Windows x64")]
