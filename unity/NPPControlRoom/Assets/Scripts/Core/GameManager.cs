@@ -253,7 +253,7 @@ namespace NPP.Core
         void EnterGame()
         {
             if (RoomRoot != null) Object.Destroy(RoomRoot.gameObject);
-            RoomRoot = ControlRoomBuilder.Build();
+            RoomRoot = NPPComplexBuilder.Build();
 
             if (Player != null) Object.Destroy(Player.gameObject);
             Player = FirstPersonPlayer.Create(new Vector3(0f, 0.15f, 4.2f), 180f);

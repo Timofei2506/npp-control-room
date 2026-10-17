@@ -18,6 +18,7 @@ namespace NPP.UI
         Text _status;
         Text _alarmBar;
         Text _coreBanner;
+        Text _zone;
         Text _chatText;
         Text _toastText;
         RectTransform _alarmPanel;
@@ -94,6 +95,11 @@ namespace NPP.UI
                                      Vector2.zero, new Vector2(680f, 44f), "", 20, 120);
             chatIn.gameObject.SetActive(false);
             _chatBg = chatIn.gameObject;
+
+            // текущее помещение (слева сверху, под статусом)
+            _zone = UiKit.Label(_canvas.transform, "", 17, new Color(0.62f, 0.78f, 0.66f), TextAnchor.MiddleLeft,
+                                new Vector2(-790f, 410f), new Vector2(460f, 26f));
+            _zone.raycastTarget = false;
 
             // тосты
             _toastText = UiKit.Label(_canvas.transform, "", 24, new Color(1f, 0.85f, 0.4f), TextAnchor.MiddleCenter,
@@ -290,6 +296,33 @@ namespace NPP.UI
             RefreshStatus();
             RefreshAlarms();
             RefreshChat();
+            RefreshZone();
+        }
+
+        /// <summary>Помещение, в котором сейчас оператор: щит → коридор → залы.</summary>
+        void RefreshZone()
+        {
+            if (_zone == null) return;
+            if (_gm.Player == null) { _zone.text = ""; return; }
+
+            Vector3 p = _gm.Player.transform.position;
+            string zone;
+
+            if (p.z > 12f)
+            {
+                if (p.x > 9f) zone = "МАШИННЫЙ ЗАЛ · ТУРБОАГРЕГАТ";
+                else zone = "РЕАКТОРНЫЙ ЗАЛ";
+            }
+            else if (p.z > 5.5f)
+            {
+                zone = "КОРИДОР";
+            }
+            else
+            {
+                zone = "БЛОЧНЫЙ ЩИТ УПРАВЛЕНИЯ";
+            }
+
+            _zone.text = "◉ " + zone;
         }
 
         void RefreshStatus()

@@ -7,8 +7,17 @@ namespace NPP.Room
     /// <summary>Процедурная сборка блочного щита управления.</summary>
     public static class ControlRoomBuilder
     {
+        /// <summary>Проход в задней стене (в коридор к реакторному залу).</summary>
+        public static bool HasBackExit { get; set; }
+
+        /// <summary>x-координата центра дверного проёма в задней стене.</summary>
+        public const float BackExitX = -2.4f;
+        public const float BackExitHalfWidth = 0.65f;
+        public const float BackExitHeight = 2.3f;
+
         public static Transform Build()
         {
+            HasBackExit = true;
             MaterialLibrary.EnsureInit();
 
             RenderSettings.ambientMode = AmbientMode.Flat;
@@ -41,7 +50,33 @@ namespace NPP.Room
             Bld.Box("Ceiling", root, new Vector3(0f, 3.62f, 0f), new Vector3(13f, 0.25f, 11f), MaterialLibrary.Ceiling);
 
             // стены
-            Bld.Box("WallBack", root, new Vector3(0f, 1.75f, 5.65f), new Vector3(13f, 3.5f, 0.3f), MaterialLibrary.Wall);
+            if (!HasBackExit)
+            {
+                Bld.Box("WallBack", root, new Vector3(0f, 1.75f, 5.65f), new Vector3(13f, 3.5f, 0.3f), MaterialLibrary.Wall);
+            }
+            else
+            {
+                // Задняя стена из сегментов вокруг дверного проёма: левая часть,
+                // правая часть и перемычка сверху. Проём ведёт в коридор.
+                float left = BackExitX - BackExitHalfWidth;    // -3.05
+                float right = BackExitX + BackExitHalfWidth;   // -1.75
+                float half = 6.5f;
+
+                Bld.Box("WallBackL", root, new Vector3((-half + left) * 0.5f, 1.75f, 5.65f),
+                          new Vector3(left + half, 3.5f, 0.3f), MaterialLibrary.Wall);
+                Bld.Box("WallBackR", root, new Vector3((right + half) * 0.5f, 1.75f, 5.65f),
+                          new Vector3(half - right, 3.5f, 0.3f), MaterialLibrary.Wall);
+                Bld.Box("WallBackTopLintel", root, new Vector3(BackExitX, (BackExitHeight + 3.5f) * 0.5f, 5.65f),
+                          new Vector3(BackExitHalfWidth * 2f, 3.5f - BackExitHeight, 0.3f), MaterialLibrary.Wall);
+
+                // дверная рама
+                Bld.Box("ExitFrameL", root, new Vector3(left - 0.04f, BackExitHeight * 0.5f, 5.5f),
+                          new Vector3(0.08f, BackExitHeight, 0.16f), MaterialLibrary.ConsoleTrim, false);
+                Bld.Box("ExitFrameR", root, new Vector3(right + 0.04f, BackExitHeight * 0.5f, 5.5f),
+                          new Vector3(0.08f, BackExitHeight, 0.16f), MaterialLibrary.ConsoleTrim, false);
+                Bld.Box("ExitFrameTop", root, new Vector3(BackExitX, BackExitHeight + 0.04f, 5.5f),
+                          new Vector3(BackExitHalfWidth * 2f + 0.16f, 0.08f, 0.16f), MaterialLibrary.ConsoleTrim, false);
+            }
             Bld.Box("WallFront", root, new Vector3(0f, 1.75f, -5.65f), new Vector3(13f, 3.5f, 0.3f), MaterialLibrary.Wall);
             Bld.Box("WallLeft", root, new Vector3(-6.65f, 1.75f, 0f), new Vector3(0.3f, 3.5f, 11f), MaterialLibrary.Wall);
             Bld.Box("WallRight", root, new Vector3(6.65f, 1.75f, 0f), new Vector3(0.3f, 3.5f, 11f), MaterialLibrary.Wall);
@@ -56,6 +91,7 @@ namespace NPP.Room
             };
             for (int i = 0; i < walls.Length; i++)
             {
+                if (i == 0 && HasBackExit) continue; // проём: панели задней стены не нужны
                 var w = walls[i];
                 bool side = w[3] > 0.5f;
                 Vector3 sizeLower = side ? new Vector3(0.03f, 1.15f, w[2]) : new Vector3(w[2], 1.15f, 0.03f);
@@ -397,11 +433,15 @@ namespace NPP.Room
         static void BuildProps(Transform root)
         {
             // дверь (группа повёрнута на 180°, поэтому «в комнату» = локальный +Z)
-            var door = Bld.Group("Door", root, new Vector3(-2.4f, 0f, 5.44f), new Vector3(0f, 180f, 0f));
-            Bld.Box("Frame", door.transform, new Vector3(0f, 1.16f, 0.02f), new Vector3(1.34f, 2.32f, 0.1f),
-                      MaterialLibrary.ConsoleTrim);
-            Bld.Box("Leaf", door.transform, new Vector3(0f, 1.13f, 0.09f), new Vector3(1.16f, 2.22f, 0.06f),
-                      MaterialLibrary.DoorSteel);
+            var door = Bld.Group("Door", root, new Vector3(BackExitX, 0f, 5.44f), new Vector3(0f, 180f, 0f));
+
+            // Створка раздвижная: уходит вбок, когда оператор подходит ближе 3 м.
+            var leaf = Bld.Box("Leaf", door.transform, new Vector3(0f, 1.13f, 0.09f), new Vector3(1.16f, 2.22f, 0.06f),
+                                 MaterialLibrary.DoorSteel);
+            var slider = leaf.AddComponent<SlidingDoor>();
+            slider.openOffset = new Vector3(1.16f, 0f, 0f);
+            slider.openDistance = 2.2f;
+
             Bld.Cyl("Handle", door.transform, new Vector3(0.42f, 1.05f, 0.15f), 0.02f, 0.18f,
                       MaterialLibrary.Chrome, new Vector3(0f, 0f, 90f));
             Bld.Box("ExitSign", door.transform, new Vector3(0f, 2.52f, 0.0f), new Vector3(0.62f, 0.2f, 0.04f),

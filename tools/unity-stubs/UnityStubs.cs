@@ -60,6 +60,8 @@ namespace UnityEngine
         public Vector3 eulerAngles { get; set; }
         public Vector3 localEulerAngles { get; set; }
         public Vector3 localScale { get; set; }
+        public Quaternion rotation { get; set; }
+        public Quaternion localRotation { get; set; }
         public Vector3 forward { get { return Vector3.forward; } }
         public Vector3 right { get { return Vector3.right; } }
         public Transform parent { get; set; }
@@ -116,6 +118,8 @@ namespace UnityEngine
         public Vector3 normalized { get { return this; } }
         public void Normalize() { }
         public static Vector3 Lerp(Vector3 a, Vector3 b, float t) { return a; }
+        public static Vector3 MoveTowards(Vector3 a, Vector3 b, float maxDelta) { return b; }
+        public static Vector3 Scale(Vector3 a, Vector3 b) { return a; }
         public static float Distance(Vector3 a, Vector3 b) { return 0; }
         public static Vector3 operator +(Vector3 a, Vector3 b) { return new Vector3(a.x + b.x, a.y + b.y, a.z + b.z); }
         public static Vector3 operator -(Vector3 a, Vector3 b) { return new Vector3(a.x - b.x, a.y - b.y, a.z - b.z); }
@@ -123,6 +127,18 @@ namespace UnityEngine
         public static Vector3 operator *(Vector3 a, float d) { return new Vector3(a.x * d, a.y * d, a.z * d); }
         public static Vector3 operator *(float d, Vector3 a) { return new Vector3(a.x * d, a.y * d, a.z * d); }
         public static Vector3 operator /(Vector3 a, float d) { return new Vector3(a.x / d, a.y / d, a.z / d); }
+    }
+
+    public struct Quaternion
+    {
+        public float x, y, z, w;
+        public static Quaternion identity { get { return new Quaternion(); } }
+        public static Quaternion LookRotation(Vector3 forward, Vector3 upwards) { return identity; }
+        public static Quaternion LookRotation(Vector3 forward) { return identity; }
+        public static Quaternion Euler(float x, float y, float z) { return identity; }
+        public static Quaternion Euler(Vector3 e) { return identity; }
+        public static Quaternion operator *(Quaternion a, Quaternion b) { return identity; }
+        public static Vector3 operator *(Quaternion q, Vector3 v) { return v; }
     }
 
     public struct Bounds
