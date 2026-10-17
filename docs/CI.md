@@ -23,8 +23,12 @@ push в main
 
 ## Один раз: лицензия Unity
 
-Unity не даёт собирать проекты без лицензии — это её правило, обойти нельзя.
-Нужны три секрета в **Settings → Secrets and variables → Actions → New repository secret**:
+Unity не собирает проекты без лицензии — это её правило, обойти нельзя. Есть **два пути**,
+оба не требуют собирать что-либо на своём ПК. Выберите один.
+
+### Путь A — GitHub Actions (уже настроен), нужен файл `Unity_lic.ulf`
+
+Три секрета в **Settings → Secrets and variables → Actions → New repository secret**:
 
 | Секрет | Что положить |
 |---|---|
@@ -33,30 +37,40 @@ Unity не даёт собирать проекты без лицензии — 
 | `UNITY_LICENSE` | содержимое файла `Unity_lic.ulf` (Personal) |
 | `UNITY_SERIAL` | вместо `.ulf` — серийник, если у вас Unity Plus/Pro |
 
-### Как получить `Unity_lic.ulf` (Unity Personal)
+`Unity_lic.ulf` создаётся один раз через **Unity Hub** (это только лаунчер, ~150 МБ;
+сам Unity Editor и сборка не нужны):
 
-Файл `.ulf` создаётся один раз на любой машине — Unity для этого не требуется ставить целиком,
-достаточно Unity Hub:
-
-1. Скачать **Unity Hub** (<https://unity.com/download>) и войти в аккаунт Unity.
+1. <https://unity.com/download> → Unity Hub → войти в аккаунт Unity.
 2. Hub → **Preferences (⚙) → Licenses → Add → Get a free personal license**.
-   Важно нажать **Add** и пройти активацию — иначе файл не создастся.
+   Обязательно нажать **Add** и пройти активацию — иначе файл не появится.
 3. Забрать файл:
    - Windows: `C:\ProgramData\Unity\Unity_lic.ulf`
    - macOS: `/Library/Application Support/Unity/Unity_lic.ulf`
    - Linux: `~/.local/share/unity3d/Unity/Unity_lic.ulf`
-4. Открыть его блокнотом, скопировать **всё содержимое** и вставить в секрет `UNITY_LICENSE`.
+4. Открыть блокнотом, скопировать **всё содержимое** → секрет `UNITY_LICENSE`.
 
-Лицензия не привязана к версии Unity и к ОС — активировали на Windows, собираем на Linux.
+Лицензия не привязана к версии Unity и к ОС: активировали на Windows — собираем на Linux.
 
-> Если в Unity Hub нет пункта «Get a free personal license» (в некоторых версиях Hub его
-> убрали) — варианты:
-> - активировать через `game-ci` локально в Docker (`.github/workflows` не нужен, просто разово);
-> - взять триал Unity Pro и использовать `UNITY_SERIAL` (серийник из <https://id.unity.com/en/subscriptions>);
-> - написать в Discord GameCI — там ведут актуальные способы.
->
-> Что **не** сработает: анонимная сборка, чужая лицензия в публичном репозитории (нарушение EULA),
-> или «сборка» без Unity — проект на C# с Unity-API, компилятором без Unity его не собрать.
+> Ручная активация через `.alf`/`license.unity3d.com/manual` для **Unity Personal больше
+> не поддерживается** (официально: только Enterprise/Industry и legacy-серийники).
+> Поэтому `.ulf` берётся из Unity Hub.
+
+### Путь B — Unity Build Automation (совсем без установок)
+
+Если не хочется ставить даже Unity Hub: облачная сборка самой Unity.
+
+1. <https://cloud.unity.com> → **Build Automation** → подключить этот GitHub-репозиторий.
+2. Создать конфигурацию: target **Windows**, версия **6000.0.58f1**, ветка `main`.
+3. Запустить билд — Unity соберёт exe в своём облаке.
+
+Лимит бесплатного тарифа — **200 Windows-минут в месяц** (сборка этого проекта ~10–15 мин,
+то есть ~15 сборок в месяц). Проект к этому готов: сцена и Build Settings создаются
+pre-build хуком `NPPPreBuild` при любой сборке, отдельная настройка не нужна.
+
+### Чего не будет работать
+
+- «Собрать без Unity» нельзя: игра использует Unity-API, а не только C#.
+- Чужая/публичная лицензия — нарушение EULA и бан аккаунта.
 
 ## Запуск вручную
 

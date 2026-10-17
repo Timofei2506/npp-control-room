@@ -95,6 +95,7 @@ namespace UnityEditor.Build.Reporting
     {
         public BuildResult result { get { return BuildResult.Succeeded; } }
         public ulong totalSize { get { return 0; } }
+        public UnityEditor.BuildTarget platform { get { return UnityEditor.BuildTarget.StandaloneWindows64; } }
     }
     public enum BuildResult { Unknown, Succeeded, Failed, Cancelled }
 }
@@ -116,6 +117,13 @@ namespace UnityEditor.SceneManagement
 
 namespace UnityEditor.Build
 {
+    public interface IOrderedCallback { int callbackOrder { get; } }
+
+    public interface IPreprocessBuildWithReport : IOrderedCallback
+    {
+        void OnPreprocessBuild(UnityEditor.Build.Reporting.BuildReport report);
+    }
+
     public class BuildPlayerOptions
     {
         public string[] scenes { get; set; }

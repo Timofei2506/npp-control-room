@@ -143,5 +143,21 @@ namespace NPP.EditorTools
                 Debug.LogError("[NPP] Сборка не удалась: " + report.summary.result);
         }
     }
+
+    /// <summary>
+    /// Гарантирует, что перед ЛЮБОЙ сборкой (GitHub Actions, Unity Build Automation,
+    /// локальный билд) есть сцена и она включена в Build Settings — независимо от того,
+    /// успел ли отработать [InitializeOnLoad] AutoSetup.
+    /// </summary>
+    public class NPPPreBuild : IPreprocessBuildWithReport
+    {
+        public int callbackOrder { get { return -1000; } }
+
+        public void OnPreprocessBuild(BuildReport report)
+        {
+            Debug.Log("[NPP] Pre-build: подготовка проекта для " + report.summary.platform);
+            NPPBuildTools.Prepare();
+        }
+    }
 }
 #endif
