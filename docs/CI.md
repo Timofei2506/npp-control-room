@@ -80,7 +80,8 @@ git push --tags
 2. прописывает сцену в Build Settings;
 3. выставляет Player Settings: окно 1600×900, Linear, **Scripting Backend = Mono2x**
    (Mono собирается на Linux-раннере; IL2CPP потребовал бы Windows-раннер и нативные тулчейны);
-4. собирает `NPPControlRoom.exe` в путь, который передаёт GameCI (`-buildPath`).
+4. собирает `NPPControlRoom.exe` в путь, который передаёт GameCI (`-customBuildPath` —
+   это уже полный путь к exe; `buildName: NPPControlRoom` задаёт имя файла).
 
 Если сборка не удалась — метод бросает исключение, и шаг Actions краснеет (а не «зелёный
 пустой артефакт»). Дополнительно шаг «Проверить, что exe действительно собрался» ищет

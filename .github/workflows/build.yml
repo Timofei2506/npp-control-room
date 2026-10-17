@@ -104,13 +104,14 @@ jobs:
           targetPlatform: StandaloneWindows64
           # Наш метод: создаёт сцену, настраивает Player Settings (Mono2x) и собирает exe.
           buildMethod: NPP.EditorTools.NPPBuildTools.BuildCI
+          buildName: NPPControlRoom
           allowDirtyBuild: true
 
       - name: Проверить, что exe действительно собрался
         run: |
           set -euo pipefail
-          find build -maxdepth 3 -type f | head -50
-          exe=$(find build -name 'NPPControlRoom.exe' | head -1)
+          find . -maxdepth 5 -name 'NPPControlRoom.exe' -print | head -10
+          exe=$(find . -name 'NPPControlRoom.exe' | head -1)
           if [ -z "$exe" ]; then
             echo "::error title=Пустая сборка::GameCI завершился, но NPPControlRoom.exe не найден"
             exit 1
@@ -121,7 +122,7 @@ jobs:
       - name: Упаковать zip
         run: |
           set -euo pipefail
-          dir=$(dirname "$(find build -name 'NPPControlRoom.exe' | head -1)")
+          dir=$(dirname "$(find . -name 'NPPControlRoom.exe' | head -1)")
           name="NPPControlRoom-${GITHUB_SHA::7}"
           (cd "$dir" && zip -qr "$GITHUB_WORKSPACE/$name.zip" .)
           ls -lh "$GITHUB_WORKSPACE/$name.zip"

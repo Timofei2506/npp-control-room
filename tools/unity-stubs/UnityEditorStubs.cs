@@ -44,6 +44,11 @@ namespace UnityEditor
     public enum BuildOptions { None }
 
     public enum BuildTargetGroup { Unknown, Standalone, Android, iOS, WebGL }
+
+    public struct NamedBuildTarget
+    {
+        public static NamedBuildTarget Standalone { get { return new NamedBuildTarget(); } }
+    }
     public enum ScriptingImplementation { Mono2x, IL2CPP, WinRTDotNET }
 
     public class PlayerSettings
@@ -58,6 +63,7 @@ namespace UnityEditor
         public static bool runInBackground { get; set; }
         public static UnityEngine.ColorSpace colorSpace { get; set; }
         public static void SetScriptingBackend(BuildTargetGroup group, ScriptingImplementation impl) { }
+        public static void SetScriptingBackend(NamedBuildTarget target, ScriptingImplementation impl) { }
     }
 
     public class EditorBuildSettingsScene

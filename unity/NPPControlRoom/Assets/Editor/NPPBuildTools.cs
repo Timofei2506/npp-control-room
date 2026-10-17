@@ -76,7 +76,7 @@ namespace NPP.EditorTools
             PlayerSettings.runInBackground = true;
             PlayerSettings.colorSpace = ColorSpace.Linear;
             // Mono2x собирается на Linux-раннере GitHub Actions без нативных тулчейнов.
-            PlayerSettings.SetScriptingBackend(BuildTargetGroup.Standalone, ScriptingImplementation.Mono2x);
+            PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
         }
 
         /// <summary>
@@ -86,11 +86,17 @@ namespace NPP.EditorTools
         /// </summary>
         public static void BuildCI()
         {
-            string buildPath = ArgValue("-buildPath", "build/StandaloneWindows64");
-            Directory.CreateDirectory(buildPath);
+            // game-ci/unity-builder передаёт -customBuildPath — уже полный путь к .exe.
+            // Если метода вызвали вручную — берём -buildPath или значение по умолчанию.
+            string exe = ArgValue("-customBuildPath", null);
+            if (string.IsNullOrEmpty(exe))
+            {
+                string dir = ArgValue("-buildPath", "Build/Windows");
+                exe = Path.Combine(dir, "NPPControlRoom.exe");
+            }
+            if (!exe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) exe += ".exe";
+            Directory.CreateDirectory(Path.GetDirectoryName(exe));
             Prepare();
-
-            string exe = Path.Combine(buildPath, "NPPControlRoom.exe");
             var opts = new BuildPlayerOptions
             {
                 scenes = new[] { ScenePath },
