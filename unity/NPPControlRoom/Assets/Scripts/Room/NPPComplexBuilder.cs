@@ -416,7 +416,7 @@ namespace NPP.Room
             Bld.Cyl("SteamOut", g, new Vector3(2.0f, 7.85f, 0f), 0.22f, 2.1f, steam, new Vector3(0f, 0f, 90f), true);
 
             // табличка на корпусе со стороны прохода
-            LabelAt(g, "ПГ-" + (idx + 1), new Vector3(1.18f, 3.4f, 0f), -90f, 0.2f,
+            LabelAt(g, "ПГ-" + (idx + 1), new Vector3(1.18f, 3.4f, 0f), 90f, 0.2f,
                     new Color(0.92f, 0.93f, 0.9f), 0.9f);
         }
 
@@ -490,17 +490,21 @@ namespace NPP.Room
 
             var turbMat = MaterialLibrary.Paint("turbine", new Color(0.55f, 0.56f, 0.58f), 0.65f, 0.55f);
             var turbMat2 = MaterialLibrary.Paint("turbine2", new Color(0.5f, 0.51f, 0.53f), 0.65f, 0.55f);
-            Bld.Cyl("HP", g, new Vector3(18.5f, 1.91f, 18.0f), 1.05f, 3.2f, turbMat, new Vector3(90f, 0f, 0f), true);
-            Bld.Cyl("LP", g, new Vector3(18.5f, 2.31f, 21.8f), 1.75f, 4.4f, turbMat2, new Vector3(90f, 0f, 0f), true);
-            Bld.Cyl("Generator", g, new Vector3(18.5f, 2.16f, 25.4f), 1.55f, 3.6f,
+            // общая ось вала на 2.4 м; ЦНД опущен в приямок фундамента
+            const float ShaftY = 2.4f;
+            Bld.Cyl("HP", g, new Vector3(18.5f, ShaftY, 18.0f), 1.05f, 3.2f, turbMat, new Vector3(90f, 0f, 0f), true);
+            Bld.Cyl("LP", g, new Vector3(18.5f, ShaftY, 21.8f), 1.75f, 4.4f, turbMat2, new Vector3(90f, 0f, 0f), true);
+            Bld.Cyl("Generator", g, new Vector3(18.5f, ShaftY, 25.4f), 1.55f, 3.6f,
                       MaterialLibrary.Paint("gen", new Color(0.30f, 0.42f, 0.52f), 0.55f, 0.5f),
                       new Vector3(90f, 0f, 0f), true);
-            Bld.Cyl("Exciter", g, new Vector3(18.5f, 2.16f, 28.15f), 0.75f, 0.9f, MaterialLibrary.ConsoleTrim,
+            Bld.Cyl("Exciter", g, new Vector3(18.5f, ShaftY, 28.15f), 0.75f, 0.9f, MaterialLibrary.ConsoleTrim,
                       new Vector3(90f, 0f, 0f), true);
 
             // опоры подшипников
-            for (int i = 0; i < 3; i++)
-                Bld.Box("Pedestal", g, new Vector3(18.5f, 1.06f, 19.9f + i * 3.4f), new Vector3(1.9f, 0.45f, 0.5f),
+            // опоры — в стыках между цилиндрами, а не внутри корпусов
+            float[] pedZ = { 16.2f, 19.7f, 23.9f, 27.4f };
+            for (int i = 0; i < pedZ.Length; i++)
+                Bld.Box("Pedestal", g, new Vector3(18.5f, 1.35f, pedZ[i]), new Vector3(1.7f, 1.0f, 0.44f),
                           MaterialLibrary.ConsoleTrim, true);
 
             // конденсатор справа, в стороне от прохода
