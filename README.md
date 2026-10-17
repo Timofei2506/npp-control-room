@@ -1,5 +1,8 @@
 # БЛОК №4 — симулятор оператора АЭС (ВВЭР-1000)
 
+[![Checks](https://github.com/Timofei2506/npp-control-room/actions/workflows/checks.yml/badge.svg)](https://github.com/Timofei2506/npp-control-room/actions/workflows/checks.yml)
+[![Build Windows x64](https://github.com/Timofei2506/npp-control-room/actions/workflows/build.yml/badge.svg)](https://github.com/Timofei2506/npp-control-room/actions/workflows/build.yml)
+
 Многопользовательский симулятор блочного щита управления энергоблоком с реактором ВВЭР-1000.
 Реалистичная физика реактора и парогенератора, процедурный блочный щит с сотнями интерактивных
 органов управления (тумблеры, верньеры, кнопки, стрелочные приборы, семисегментные табло,

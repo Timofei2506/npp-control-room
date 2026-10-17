@@ -1,0 +1,61 @@
+name: Checks
+
+# Быстрые проверки, которым не нужна лицензия Unity:
+#   1) компиляция всех C# скриптов (runtime + editor) против заглушек Unity;
+#   2) эталонные сценарии физики;
+#   3) сетевой smoke-тест: два клиента против локального Node-релея.
+# Полная сборка exe — в workflow «Build Windows x64».
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "unity/**"
+      - "tools/**"
+      - "server/node-relay/**"
+      - ".github/workflows/checks.yml"
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Компиляция · физика · сеть
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установить Mono (mcs) и Node
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mono-devel
+          mcs --version
+          node --version
+
+      - name: Зависимости релея
+        run: npm ci --prefix server/node-relay --silent
+
+      - name: Запустить LAN-релей
+        run: |
+          nohup node server/node-relay/server.js > relay.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8787/health; then echo; break; fi
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8787/health || { cat relay.log; exit 1; }
+
+      - name: Проверки
+        run: tools/checks/check.sh ws://127.0.0.1:8787/ws
+
+      - name: Лог релея при падении
+        if: failure()
+        run: cat relay.log || true
