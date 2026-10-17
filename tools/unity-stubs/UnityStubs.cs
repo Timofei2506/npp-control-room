@@ -282,7 +282,11 @@ namespace UnityEngine
         public static void LogError(object msg) { }
     }
 
-    public class Shader : Object { public static Shader Find(string name) { return null; } }
+    public class Shader : Object
+    {
+        public bool isSupported { get { return true; } }
+        public static Shader Find(string name) { return null; }
+    }
 
     public class Texture : Object { }
 
@@ -293,6 +297,7 @@ namespace UnityEngine
     public class Texture2D : Texture
     {
         public Texture2D(int width, int height, TextureFormat format, bool mipChain) { }
+        public Texture2D(int width, int height, TextureFormat format, bool mipChain, bool linear) { }
         public FilterMode filterMode { get; set; }
         public TextureWrapMode wrapMode { get; set; }
         public int anisoLevel { get; set; }

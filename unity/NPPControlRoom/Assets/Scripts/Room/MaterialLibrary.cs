@@ -21,6 +21,7 @@ namespace NPP.Room
             _unlit = Shader.Find("NPP/Unlit");
             _unlitTransparent = Shader.Find("NPP/UnlitTransparent");
             if (_lit == null) { Debug.LogError("Shader NPP/Lit not found"); _lit = Shader.Find("Standard"); }
+            else if (!_lit.isSupported) { Debug.LogError("Shader NPP/Lit не скомпилировался — используется Standard"); _lit = Shader.Find("Standard"); }
             if (_unlit == null) { Debug.LogError("Shader NPP/Unlit not found"); _unlit = Shader.Find("Unlit/Texture"); }
             if (_unlitTransparent == null) _unlitTransparent = _unlit;
         }
@@ -44,6 +45,49 @@ namespace NPP.Room
                     if (!mono && rnd.Next(0, 100) < 5) c *= 0.95f;
                     px[y * size + x] = c;
                 }
+            tex.SetPixels(px);
+            tex.wrapMode = TextureWrapMode.Repeat;
+            tex.anisoLevel = 4;
+            tex.Apply(true, false);
+            return tex;
+        }
+
+        /// <summary>
+        /// Карта нормалей из многооктавного шума. Создаётся в линейном пространстве
+        /// (последний аргумент конструктора), иначе sRGB-коррекция «съедает» рельеф.
+        /// </summary>
+        public static Texture2D NormalTex(int size, float frequency, float strength, int seed)
+        {
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, true, true);
+            var px = new Color[size * size];
+            var h = new float[size * size];
+            float off = seed * 0.173f;
+
+            for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
+                {
+                    float nx = (float)x / size * frequency + off;
+                    float ny = (float)y / size * frequency + off;
+                    h[y * size + x] = Mathf.PerlinNoise(nx, ny) * 0.62f
+                                    + Mathf.PerlinNoise(nx * 2.7f, ny * 2.7f) * 0.26f
+                                    + Mathf.PerlinNoise(nx * 7.9f, ny * 7.9f) * 0.12f;
+                }
+
+            for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
+                {
+                    float hl = h[y * size + ((x - 1 + size) % size)];
+                    float hr = h[y * size + ((x + 1) % size)];
+                    float hd = h[((y - 1 + size) % size) * size + x];
+                    float hu = h[((y + 1) % size) * size + x];
+
+                    float dx = (hr - hl) * strength;
+                    float dy = (hu - hd) * strength;
+                    Vector3 n = new Vector3(-dx, -dy, 1f).normalized;
+
+                    px[y * size + x] = new Color(n.x * 0.5f + 0.5f, n.y * 0.5f + 0.5f, n.z * 0.5f + 0.5f, 1f);
+                }
+
             tex.SetPixels(px);
             tex.wrapMode = TextureWrapMode.Repeat;
             tex.anisoLevel = 4;
@@ -101,7 +145,8 @@ namespace NPP.Room
             return pc.Texture;
         }
 
-        static Material MakeLit(string key, Color color, float metallic, float gloss, Texture tex = null, Vector2? tiling = null)
+        static Material MakeLit(string key, Color color, float metallic, float gloss, Texture tex = null,
+                                Vector2? tiling = null, Texture bump = null, float bumpScale = 1f)
         {
             Material m;
             if (Cache.TryGetValue(key, out m)) return m;
@@ -115,24 +160,41 @@ namespace NPP.Room
                 m.SetTexture("_MainTex", tex);
                 if (tiling != null) m.SetTextureScale("_MainTex", tiling.Value);
             }
+            if (bump != null)
+            {
+                m.SetTexture("_BumpMap", bump);
+                m.SetFloat("_BumpScale", bumpScale);
+                if (tiling != null) m.SetTextureScale("_BumpMap", tiling.Value);
+            }
             Cache[key] = m;
             return m;
         }
 
+        static readonly Dictionary<string, Texture2D> BumpCache = new Dictionary<string, Texture2D>();
+
+        static Texture2D Bump(string key, int size, float freq, float strength, int seed)
+        {
+            Texture2D t;
+            if (BumpCache.TryGetValue(key, out t) && t != null) return t;
+            t = NormalTex(size, freq, strength, seed);
+            BumpCache[key] = t;
+            return t;
+        }
+
         // ---------------- публичные материалы ----------------
-        public static Material Wall { get { EnsureInit(); return MakeLit("wall", new Color(0.62f, 0.66f, 0.63f), 0.02f, 0.22f, NoiseTex(256, new Color(0.58f, 0.62f, 0.59f), new Color(0.66f, 0.70f, 0.66f), 6f, 7), new Vector2(2f, 2f)); } }
+        public static Material Wall { get { EnsureInit(); return MakeLit("wall", new Color(0.62f, 0.66f, 0.63f), 0.02f, 0.22f, NoiseTex(256, new Color(0.58f, 0.62f, 0.59f), new Color(0.66f, 0.70f, 0.66f), 6f, 7), new Vector2(2f, 2f), Bump("wall", 256, 7f, 2.2f, 11), 0.9f); } }
 
-        public static Material Floor { get { EnsureInit(); return MakeLit("floor", Color.white, 0.1f, 0.35f, FloorTex(256), new Vector2(6f, 6f)); } }
+        public static Material Floor { get { EnsureInit(); return MakeLit("floor", Color.white, 0.1f, 0.35f, FloorTex(256), new Vector2(6f, 6f), Bump("floor", 256, 6f, 2.6f, 21), 0.8f); } }
 
-        public static Material Ceiling { get { EnsureInit(); return MakeLit("ceil", Color.white, 0.02f, 0.3f, CeilTex(256), new Vector2(4f, 4f)); } }
+        public static Material Ceiling { get { EnsureInit(); return MakeLit("ceil", Color.white, 0.02f, 0.3f, CeilTex(256), new Vector2(4f, 4f), Bump("ceil", 256, 5f, 1.6f, 31), 0.6f); } }
 
-        public static Material Concrete { get { EnsureInit(); return MakeLit("concrete", new Color(0.55f, 0.56f, 0.57f), 0f, 0.15f, NoiseTex(256, new Color(0.5f, 0.51f, 0.52f), new Color(0.6f, 0.61f, 0.62f), 5f, 42), new Vector2(3f, 3f)); } }
+        public static Material Concrete { get { EnsureInit(); return MakeLit("concrete", new Color(0.55f, 0.56f, 0.57f), 0f, 0.15f, NoiseTex(256, new Color(0.5f, 0.51f, 0.52f), new Color(0.6f, 0.61f, 0.62f), 5f, 42), new Vector2(3f, 3f), Bump("conc", 256, 5f, 2.0f, 42), 0.7f); } }
 
-        public static Material ConsoleBody { get { EnsureInit(); return MakeLit("console", new Color(0.34f, 0.38f, 0.40f), 0.35f, 0.45f); } }
+        public static Material ConsoleBody { get { EnsureInit(); return MakeLit("console", new Color(0.34f, 0.38f, 0.40f), 0.35f, 0.45f, NoiseTex(128, new Color(0.33f, 0.37f, 0.39f), new Color(0.36f, 0.40f, 0.42f), 9f, 55), new Vector2(2f, 2f), Bump("console", 128, 9f, 1.2f, 55), 0.5f); } }
 
         public static Material ConsoleTrim { get { EnsureInit(); return MakeLit("trim", new Color(0.16f, 0.17f, 0.18f), 0.5f, 0.5f); } }
 
-        public static Material PanelFace { get { EnsureInit(); return MakeLit("panel", new Color(0.10f, 0.115f, 0.12f), 0.2f, 0.55f); } }
+        public static Material PanelFace { get { EnsureInit(); return MakeLit("panel", new Color(0.10f, 0.115f, 0.12f), 0.2f, 0.55f, NoiseTex(128, new Color(0.095f, 0.11f, 0.115f), new Color(0.115f, 0.13f, 0.135f), 11f, 77, true), new Vector2(2f, 2f), Bump("panel", 128, 11f, 1.0f, 77), 0.45f); } }
 
         public static Material PanelFaceLight { get { EnsureInit(); return MakeLit("panel2", new Color(0.72f, 0.73f, 0.70f), 0.15f, 0.4f); } }
 
@@ -146,13 +208,13 @@ namespace NPP.Room
 
         public static Material Chrome { get { EnsureInit(); return MakeLit("chrome", new Color(0.75f, 0.76f, 0.78f), 0.9f, 0.75f); } }
 
-        public static Material AluPlate { get { EnsureInit(); return MakeLit("alu", new Color(0.58f, 0.60f, 0.62f), 0.7f, 0.55f, NoiseTex(128, new Color(0.5f, 0.52f, 0.54f), new Color(0.66f, 0.68f, 0.7f), 12f, 99), new Vector2(2f, 1f)); } }
+        public static Material AluPlate { get { EnsureInit(); return MakeLit("alu", new Color(0.58f, 0.60f, 0.62f), 0.7f, 0.55f, NoiseTex(128, new Color(0.5f, 0.52f, 0.54f), new Color(0.66f, 0.68f, 0.7f), 12f, 99), new Vector2(2f, 1f), Bump("alu", 128, 12f, 0.7f, 99), 0.35f); } }
 
         public static Material RubberBlack { get { EnsureInit(); return MakeLit("rubber", new Color(0.03f, 0.03f, 0.03f), 0f, 0.1f); } }
 
-        public static Material DeskTop { get { EnsureInit(); return MakeLit("desk", new Color(0.22f, 0.24f, 0.25f), 0.25f, 0.4f, NoiseTex(128, new Color(0.2f, 0.22f, 0.23f), new Color(0.26f, 0.28f, 0.29f), 20f, 5), new Vector2(4f, 1f)); } }
+        public static Material DeskTop { get { EnsureInit(); return MakeLit("desk", new Color(0.22f, 0.24f, 0.25f), 0.25f, 0.4f, NoiseTex(128, new Color(0.2f, 0.22f, 0.23f), new Color(0.26f, 0.28f, 0.29f), 20f, 5), new Vector2(4f, 1f), Bump("desk", 128, 20f, 0.8f, 5), 0.4f); } }
 
-        public static Material DoorSteel { get { EnsureInit(); return MakeLit("door", new Color(0.3f, 0.33f, 0.35f), 0.6f, 0.5f, NoiseTex(128, new Color(0.28f, 0.31f, 0.33f), new Color(0.34f, 0.37f, 0.39f), 14f, 3), new Vector2(1f, 2f)); } }
+        public static Material DoorSteel { get { EnsureInit(); return MakeLit("door", new Color(0.3f, 0.33f, 0.35f), 0.6f, 0.5f, NoiseTex(128, new Color(0.28f, 0.31f, 0.33f), new Color(0.34f, 0.37f, 0.39f), 14f, 3), new Vector2(1f, 2f), Bump("door", 128, 14f, 1.0f, 3), 0.5f); } }
 
         public static Material Glass { get { EnsureInit(); return MakeUnlitTransparent("glass", new Color(0.7f, 0.85f, 0.9f, 0.16f)); } }
 
