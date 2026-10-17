@@ -80,11 +80,13 @@ namespace NPP.Room
 
         static void Sign(Transform p, string text, Vector3 pos, float yaw, float height = 0.16f)
         {
+            // ширина щита — по длине надписи, иначе длинные строки придавливаются к 1.4 м
+            float width = Mathf.Clamp(text.Length * height * 0.62f + 0.36f, 0.9f, 4.2f);
             var g = Bld.Group("Sign_" + text, p, pos, new Vector3(0f, yaw, 0f));
-            Bld.Box("Plate", g.transform, Vector3.zero, new Vector3(1.5f, height * 2.4f, 0.03f),
+            Bld.Box("Plate", g.transform, Vector3.zero, new Vector3(width, height * 2.4f, 0.03f),
                       MaterialLibrary.Paint("signplate", new Color(0.09f, 0.14f, 0.09f), 0.3f, 0.2f), false);
             Bld.Label(g.transform, text, new Vector3(0f, 0f, 0.02f), height,
-                        new Color(0.85f, 0.92f, 0.7f), TextAnchor.MiddleCenter, 1.4f);
+                        new Color(0.85f, 0.92f, 0.7f), TextAnchor.MiddleCenter, width - 0.14f);
         }
 
         static void CeilingLamp(Transform p, Vector3 pos)
@@ -155,6 +157,55 @@ namespace NPP.Room
         }
 
         // =================================================================
+        // Индустриальный декор залов
+        // =================================================================
+
+        /// <summary>Поперечная ферма перекрытия.</summary>
+        static void Truss(Transform p, float x0, float x1, float z)
+        {
+            var steel = MaterialLibrary.Paint("steel", new Color(0.42f, 0.44f, 0.45f), 0.55f, 0.45f);
+            float y = HallHeight - 0.75f;
+            Bld.Box("TrussTop", p, new Vector3((x0 + x1) * 0.5f, y, z), new Vector3(x1 - x0, 0.16f, 0.16f), steel, false);
+            Bld.Box("TrussBot", p, new Vector3((x0 + x1) * 0.5f, y - 0.8f, z), new Vector3(x1 - x0, 0.14f, 0.14f), steel, false);
+            int n = Mathf.Max(4, Mathf.RoundToInt((x1 - x0) / 1.7f));
+            for (int i = 0; i <= n; i++)
+            {
+                float x = Mathf.Lerp(x0, x1, i / (float)n);
+                Bld.Box("TrussWeb", p, new Vector3(x, y - 0.4f, z), new Vector3(0.1f, 0.84f, 0.12f), steel, false);
+            }
+        }
+
+        /// <summary>Надпись с явным направлением лицевой стороны (0 — в +Z, 180 — в −Z).</summary>
+        static void LabelAt(Transform p, string text, Vector3 pos, float yaw, float height, Color color, float maxWidth = 0f)
+        {
+            Bld.Label(p, text, pos, height, color, TextAnchor.MiddleCenter, maxWidth, yaw);
+        }
+
+        /// <summary>Жёлтая линия разметки пола.</summary>
+        static void Stripe(Transform p, string name, float x0, float x1, float z0, float z1)
+        {
+            Bld.Box(name, p, new Vector3((x0 + x1) * 0.5f, 0.012f, (z0 + z1) * 0.5f),
+                      new Vector3(x1 - x0, 0.024f, z1 - z0),
+                      MaterialLibrary.Paint("floorline", new Color(0.86f, 0.7f, 0.08f), 0.3f, 0.35f), false);
+        }
+
+        /// <summary>Тёмный пояс облицовки по низу стены, идущей вдоль X.</summary>
+        static void WainscotX(Transform p, float z, float x0, float x1, float into)
+        {
+            Bld.Box("Wainscot", p, new Vector3((x0 + x1) * 0.5f, 0.62f, z + into * 0.012f),
+                      new Vector3(x1 - x0, 1.24f, 0.02f),
+                      MaterialLibrary.Paint("wainscot", new Color(0.22f, 0.31f, 0.28f), 0.35f, 0.3f), false);
+        }
+
+        /// <summary>Тёмный пояс облицовки по низу стены, идущей вдоль Z.</summary>
+        static void WainscotZ(Transform p, float x, float z0, float z1, float into)
+        {
+            Bld.Box("Wainscot", p, new Vector3(x + into * 0.012f, 0.62f, (z0 + z1) * 0.5f),
+                      new Vector3(0.02f, 1.24f, z1 - z0),
+                      MaterialLibrary.Paint("wainscot", new Color(0.22f, 0.31f, 0.28f), 0.35f, 0.3f), false);
+        }
+
+        // =================================================================
         // Коридор: щит → залы
         // =================================================================
         static void BuildCorridor(Transform root)
@@ -175,8 +226,8 @@ namespace NPP.Room
                 CeilingLamp(g, new Vector3(cx, CorridorH - 0.05f, 6.6f + i * 2.2f));
 
             // таблички и указатели
-            Sign(g, "РЕАКТОРНЫЙ ЗАЛ", new Vector3(cx, 2.55f, z1 - 0.02f), 180f, 0.13f);
-            Sign(g, "К БЛОЧНОМУ ЩИТУ", new Vector3(cx, 2.55f, z0 + 0.02f), 0f, 0.11f);
+            Sign(g, "РЕАКТОРНЫЙ ЗАЛ", new Vector3(cx, 2.55f, z1 - 0.18f), 180f, 0.13f);
+            Sign(g, "К БЛОЧНОМУ ЩИТУ", new Vector3(cx, 2.55f, z0 + 0.32f), 0f, 0.11f);
 
             // трубы вдоль стены
             for (int i = 0; i < 2; i++)
@@ -203,7 +254,7 @@ namespace NPP.Room
             Bld.Box("Ceiling", g, new Vector3(0f, HallHeight, zc), new Vector3(ReactorHalfX * 2f, 0.3f, depth),
                       MaterialLibrary.Concrete);
 
-            // передняя стена зала — с проёмом под коридор
+            // передняя стена — с проёмом под коридор
             float cz0 = CorridorX0, cz1 = CorridorX1;
             WallX(g, "WallFrontL", HallZ0, -ReactorHalfX, cz0, 0f, HallHeight);
             WallX(g, "WallFrontR", HallZ0, cz1, ReactorHalfX, 0f, HallHeight);
@@ -217,10 +268,11 @@ namespace NPP.Room
             WallZ(g, "WallRightA", ReactorHalfX, HallZ0, doorZ0, 0f, HallHeight);
             WallZ(g, "WallRightB", ReactorHalfX, doorZ1, HallZ1, 0f, HallHeight);
             WallZ(g, "WallRightTop", ReactorHalfX, doorZ0, doorZ1, doorH, HallHeight);
+
             Sign(g, "МАШИННЫЙ ЗАЛ →", new Vector3(ReactorHalfX - 0.02f, doorH + 0.45f, (doorZ0 + doorZ1) * 0.5f),
                  -90f, 0.12f);
-            Sign(g, "БЛОЧНЫЙ ЩИТ · КОРИДОР", new Vector3((cz0 + cz1) * 0.5f, CorridorH + 0.42f, HallZ0 + 0.18f),
-                 180f, 0.12f);
+            Sign(g, "БЛОЧНЫЙ ЩИТ · КОРИДОР",
+                 new Vector3((cz0 + cz1) * 0.5f, CorridorH + 0.42f, HallZ0 + 0.18f), 0f, 0.12f);
 
             // створка между залами: уезжает вдоль стены
             var hd = Bld.Group("HallDoor", g, new Vector3(ReactorHalfX, 0f, (doorZ0 + doorZ1) * 0.5f),
@@ -233,65 +285,78 @@ namespace NPP.Room
             hslide.openDistance = 3.2f;
             hslide.speed = 3.2f;
 
-            // пол-площадка: приямок вокруг реактора
+            // облицовка низа стен
+            WainscotX(g, HallZ0 + 0.16f, -ReactorHalfX + 0.15f, cz0 - 0.05f, 1f);
+            WainscotX(g, HallZ0 + 0.16f, cz1 + 0.05f, ReactorHalfX - 0.15f, 1f);
+            WainscotX(g, HallZ1 - 0.16f, -ReactorHalfX + 0.15f, ReactorHalfX - 0.15f, -1f);
+            WainscotZ(g, -ReactorHalfX + 0.16f, HallZ0 + 0.15f, HallZ1 - 0.15f, 1f);
+
+            // фермы перекрытия
+            for (int i = 0; i < 6; i++)
+                Truss(g, -ReactorHalfX + 0.4f, ReactorHalfX - 0.4f, HallZ0 + 1.9f + i * 3.1f);
+
+            // разметка: дорожки по периметру и опасная зона вокруг реактора
+            Stripe(g, "LineFront", -8.3f, 8.3f, 14.5f, 14.72f);
+            Stripe(g, "LineRight", 6.5f, 6.72f, 12.4f, 29.4f);
+            Stripe(g, "HazS", -4.05f, 4.05f, 16.88f, 17.1f);
+            Stripe(g, "HazN", -4.05f, 4.05f, 24.9f, 25.12f);
+            Stripe(g, "HazW", -4.05f, -3.83f, 17.1f, 24.9f);
+            Stripe(g, "HazE", 3.83f, 4.05f, 17.1f, 24.9f);
+
+            // реактор
             BuildReactor(g, new Vector3(0f, 0f, 21f));
-
-            // парогенераторы по углам
-            Vector3[] sgPos =
-            {
-                new Vector3(-5.4f, 0f, 16.2f),
-                new Vector3(5.4f, 0f, 16.2f),
-                new Vector3(-5.4f, 0f, 25.8f),
-                new Vector3(5.4f, 0f, 25.8f)
-            };
-            for (int i = 0; i < sgPos.Length; i++)
-                BuildSteamGenerator(g, sgPos[i], i);
-
-            // главные циркуляционные насосы
-            for (int i = 0; i < 2; i++)
-                BuildPump(g, new Vector3(-3.2f + i * 6.4f, 0f, 26.6f), i);
-
-            // мостовой кран
-            BuildCrane(g, zc);
-
-            // освещение
-            for (int i = 0; i < 3; i++)
-            {
-                CeilingLamp(g, new Vector3(-5f, HallHeight - 0.2f, 15.5f + i * 6f));
-                CeilingLamp(g, new Vector3(5f, HallHeight - 0.2f, 15.5f + i * 6f));
-            }
-
-            Sign(g, "РЕАКТОРНЫЙ ЗАЛ · БЛОК №4", new Vector3(0f, HallHeight - 1.2f, HallZ0 + 0.18f), 180f, 0.22f);
-
-            AddHallHum(g, new Vector3(-3f, 2.2f, 18f), 0.7f);
-            AddHallHum(g, new Vector3(4f, 2.2f, 24f), 0.55f);
-
-            // ограждение вокруг реактора
             float r = 3.6f;
             Railing(g, "RailN", new Vector3(-r, 0f, 21f + r), new Vector3(r, 0f, 21f + r));
             Railing(g, "RailS", new Vector3(-r, 0f, 21f - r), new Vector3(r, 0f, 21f - r));
             Railing(g, "RailW", new Vector3(-r, 0f, 21f - r), new Vector3(-r, 0f, 21f + r));
             Railing(g, "RailE", new Vector3(r, 0f, 21f - r), new Vector3(r, 0f, 21f + r));
 
-            // Информационная стойка у входа: мнемосхема блока и температуры.
-            var info = Bld.Group("HallInfo", g, new Vector3(-1.1f, 0f, 13.4f), new Vector3(0f, 180f, 0f)).transform;
-            Bld.Box("Post", info, new Vector3(0f, 1.05f, 0f), new Vector3(2.3f, 2.1f, 0.18f), MaterialLibrary.ConsoleBody);
-            PanelFactory.AddMimicScreen(info, new Vector3(0f, 1.55f, 0.1f), new Vector2(1.5f, 0.5f), 0f);
-            PanelFactory.AddReadout(info, new Vector3(-0.62f, 0.72f, 0.11f), new Vector2(0.52f, 0.18f),
-                                    "ТОПЛИВО", Metric.FuelTemp, 0, " °C");
-            PanelFactory.AddReadout(info, new Vector3(0f, 0.72f, 0.11f), new Vector2(0.52f, 0.18f),
-                                    "ТЕПЛОНОСИТ.", Metric.CoolTemp, 0, " °C");
-            PanelFactory.AddReadout(info, new Vector3(0.62f, 0.72f, 0.11f), new Vector2(0.52f, 0.18f),
-                                    "ДАВЛЕНИЕ", Metric.SteamPressure, 2, " МПа");
+            // парогенераторы: два у левой стены, два у задней — проход вдоль правой стены свободен
+            BuildSteamGenerator(g, new Vector3(-7.2f, 0f, 16.4f), 0);
+            BuildSteamGenerator(g, new Vector3(-7.2f, 0f, 25.6f), 1);
+            BuildSteamGenerator(g, new Vector3(-4.6f, 0f, 28.3f), 2);
+            BuildSteamGenerator(g, new Vector3(0.4f, 0f, 28.3f), 3);
 
-            // щиты и шкафы вдоль левой стены
-            for (int i = 0; i < 4; i++)
+            // ГЦН у задней стены
+            BuildPump(g, new Vector3(-7.7f, 0f, 28.6f), 0);
+            BuildPump(g, new Vector3(3.7f, 0f, 28.6f), 1);
+
+            // шкафы вдоль передней стены, слева от входа
+            for (int i = 0; i < 3; i++)
             {
-                var cab = Bld.Box("Cabinet", g, new Vector3(-ReactorHalfX + 0.55f, 0.95f, 14.5f + i * 1.4f),
-                                    new Vector3(0.7f, 1.9f, 1.2f), MaterialLibrary.Paint("cab", new Color(0.28f, 0.33f, 0.3f), 0.4f, 0.3f));
-                Bld.Box("CabDoor", cab.transform, new Vector3(0.36f, 0f, 0f), new Vector3(0.02f, 1.7f, 1.05f),
+                var cab = Bld.Box("Cabinet", g, new Vector3(-8.0f + i * 1.15f, 0.95f, 12.55f),
+                                    new Vector3(1.05f, 1.9f, 0.7f),
+                                    MaterialLibrary.Paint("cab", new Color(0.28f, 0.33f, 0.3f), 0.4f, 0.3f));
+                Bld.Box("CabDoor", cab.transform, new Vector3(0f, 0f, 0.36f), new Vector3(0.95f, 1.7f, 0.02f),
                           MaterialLibrary.Paint("cabdoor", new Color(0.33f, 0.38f, 0.34f), 0.45f, 0.3f), false);
             }
+
+            // информационный щит на передней стене справа от входа
+            var info = Bld.Group("HallInfo", g, new Vector3(2.4f, 0f, HallZ0 + 0.34f), Vector3.zero).transform;
+            Bld.Box("Post", info, new Vector3(0f, 1.15f, 0f), new Vector3(2.4f, 2.3f, 0.2f), MaterialLibrary.ConsoleBody);
+            Bld.Box("Face", info, new Vector3(0f, 1.2f, 0.11f), new Vector3(2.32f, 2.18f, 0.02f), MaterialLibrary.PanelFace);
+            PanelFactory.AddMimicScreen(info, new Vector3(0f, 1.62f, 0.13f), new Vector2(1.9f, 0.62f), 0f);
+            PanelFactory.AddReadout(info, new Vector3(-0.76f, 0.82f, 0.13f), new Vector2(0.66f, 0.2f),
+                                    "ТОПЛИВО", Metric.FuelTemp, 0, " °C");
+            PanelFactory.AddReadout(info, new Vector3(0f, 0.82f, 0.13f), new Vector2(0.66f, 0.2f),
+                                    "ТЕПЛОНОСИТ.", Metric.CoolTemp, 0, " °C");
+            PanelFactory.AddReadout(info, new Vector3(0.76f, 0.82f, 0.13f), new Vector2(0.66f, 0.2f),
+                                    "ДАВЛЕНИЕ", Metric.SteamPressure, 2, " МПа");
+
+            // мостовой кран
+            BuildCrane(g, zc);
+
+            // свет
+            for (int i = 0; i < 3; i++)
+            {
+                CeilingLamp(g, new Vector3(-5f, HallHeight - 0.3f, 15.5f + i * 6f));
+                CeilingLamp(g, new Vector3(5f, HallHeight - 0.3f, 15.5f + i * 6f));
+            }
+
+            Sign(g, "РЕАКТОРНЫЙ ЗАЛ · БЛОК №4", new Vector3(0f, HallHeight - 1.7f, HallZ0 + 0.18f), 0f, 0.22f);
+
+            AddHallHum(g, new Vector3(-3f, 2.2f, 18f), 0.7f);
+            AddHallHum(g, new Vector3(4f, 2.2f, 24f), 0.55f);
         }
 
         static void BuildReactor(Transform p, Vector3 at)
@@ -339,18 +404,20 @@ namespace NPP.Room
         {
             var g = Bld.Group("SG" + (idx + 1), p, at, Vector3.zero).transform;
 
+            Bld.Cyl("Base", g, new Vector3(0f, 0.15f, 0f), 1.35f, 0.3f, MaterialLibrary.Concrete);
             Bld.Cyl("Body", g, new Vector3(0f, 3.0f, 0f), 1.15f, 6.0f,
                       MaterialLibrary.Paint("sg", new Color(0.46f, 0.48f, 0.45f), 0.55f, 0.42f), default(Vector3), true);
             Bld.Cyl("Top", g, new Vector3(0f, 6.1f, 0f), 1.0f, 0.35f, MaterialLibrary.ConsoleTrim);
-            Bld.Cyl("Base", g, new Vector3(0f, 0.15f, 0f), 1.35f, 0.3f, MaterialLibrary.Concrete);
+            Bld.Cyl("Flange", g, new Vector3(0f, 1.35f, 0f), 1.24f, 0.22f, MaterialLibrary.ConsoleTrim);
 
-            // паропровод к машинному залу
-            Bld.Cyl("SteamPipe", g, new Vector3(1.05f, 6.2f, 0f), 0.3f, 1.9f,
-                      MaterialLibrary.Paint("hpsteam", new Color(0.62f, 0.58f, 0.52f), 0.5f, 0.5f),
-                      new Vector3(0f, 0f, 90f), true);
+            // паропровод: подъём с верхней крышки и отвод в сторону
+            var steam = MaterialLibrary.Paint("hpsteam", new Color(0.62f, 0.58f, 0.52f), 0.5f, 0.5f);
+            Bld.Cyl("SteamRiser", g, new Vector3(0.95f, 7.0f, 0f), 0.22f, 1.9f, steam, default(Vector3), true);
+            Bld.Cyl("SteamOut", g, new Vector3(2.0f, 7.85f, 0f), 0.22f, 2.1f, steam, new Vector3(0f, 0f, 90f), true);
 
-            Bld.Label(g.transform, "ПГ-" + (idx + 1), new Vector3(0f, 3.4f, -1.18f), 0.2f,
-                        new Color(0.9f, 0.9f, 0.86f), TextAnchor.MiddleCenter, 0.9f);
+            // табличка на корпусе со стороны прохода
+            LabelAt(g, "ПГ-" + (idx + 1), new Vector3(1.18f, 3.4f, 0f), -90f, 0.2f,
+                    new Color(0.92f, 0.93f, 0.9f), 0.9f);
         }
 
         static void BuildPump(Transform p, Vector3 at, int idx)
@@ -361,8 +428,10 @@ namespace NPP.Room
                       MaterialLibrary.Paint("motor", new Color(0.22f, 0.32f, 0.45f), 0.5f, 0.4f), default(Vector3), true);
             Bld.Cyl("Casing", g, new Vector3(0f, 0.45f, 0.55f), 0.42f, 0.5f,
                       MaterialLibrary.Chrome, new Vector3(90f, 0f, 0f), true);
-            Bld.Label(g.transform, "ГЦН-" + (idx + 1), new Vector3(0f, 2.25f, 0f), 0.16f,
-                        new Color(0.9f, 0.9f, 0.86f), TextAnchor.MiddleCenter, 0.8f);
+            Bld.Box("Plate", g, new Vector3(0f, 0.42f, -0.82f), new Vector3(0.62f, 0.26f, 0.02f),
+                      MaterialLibrary.AluPlate, false);
+            LabelAt(g, "ГЦН-" + (idx + 1), new Vector3(0f, 0.42f, -0.84f), 180f, 0.15f,
+                    new Color(0.12f, 0.12f, 0.12f), 0.5f);
         }
 
         static void BuildCrane(Transform p, float zc)
@@ -402,40 +471,63 @@ namespace NPP.Room
             WallX(g, "WallBack", HallZ1, x0, x1, 0f, HallHeight);
             WallZ(g, "WallRight", x1, HallZ0, HallZ1, 0f, HallHeight);
 
-            // турбоагрегат
-            var t = Bld.Group("Turbine", g, new Vector3(18.5f, 0f, 20f), new Vector3(0f, 90f, 0f)).transform;
-            Bld.Box("Foundation", t, new Vector3(0f, 0.35f, 0f), new Vector3(3.4f, 0.7f, 9.5f), MaterialLibrary.Concrete);
+            // облицовка и фермы
+            WainscotX(g, HallZ0 + 0.16f, x0 + 0.15f, x1 - 0.15f, 1f);
+            WainscotX(g, HallZ1 - 0.16f, x0 + 0.15f, x1 - 0.15f, -1f);
+            WainscotZ(g, x1 - 0.16f, HallZ0 + 0.15f, HallZ1 - 0.15f, -1f);
+            for (int i = 0; i < 6; i++)
+                Truss(g, x0 + 0.4f, x1 - 0.4f, HallZ0 + 1.9f + i * 3.1f);
 
-            // цилиндры высокого/низкого давления
-            Bld.Cyl("HP", t, new Vector3(0f, 1.75f, 2.6f), 1.05f, 3.2f,
-                      MaterialLibrary.Paint("turbine", new Color(0.55f, 0.56f, 0.58f), 0.65f, 0.55f),
-                      new Vector3(90f, 0f, 0f), true);
-            Bld.Cyl("LP", t, new Vector3(0f, 2.15f, -1.6f), 1.75f, 4.4f,
-                      MaterialLibrary.Paint("turbine2", new Color(0.5f, 0.51f, 0.53f), 0.65f, 0.55f),
-                      new Vector3(90f, 0f, 0f), true);
+            // разметка проходов вдоль агрегата
+            Stripe(g, "LineL", 15.84f, 16.06f, 12.4f, 29.4f);
+            Stripe(g, "LineR", 20.94f, 21.16f, 12.4f, 29.4f);
 
-            // генератор
-            Bld.Cyl("Generator", t, new Vector3(0f, 2.0f, -5.4f), 1.55f, 3.6f,
+            // турбоагрегат вдоль оси зала; фундамент — под всей машиной, включая возбудитель
+            Bld.Box("FoundationStep", g, new Vector3(18.5f, 0.16f, 21.5f), new Vector3(3.9f, 0.32f, 15.2f),
+                      MaterialLibrary.Concrete, true);
+            Bld.Box("Foundation", g, new Vector3(18.5f, 0.51f, 21.5f), new Vector3(3.4f, 0.7f, 14.6f),
+                      MaterialLibrary.Concrete);
+
+            var turbMat = MaterialLibrary.Paint("turbine", new Color(0.55f, 0.56f, 0.58f), 0.65f, 0.55f);
+            var turbMat2 = MaterialLibrary.Paint("turbine2", new Color(0.5f, 0.51f, 0.53f), 0.65f, 0.55f);
+            Bld.Cyl("HP", g, new Vector3(18.5f, 1.91f, 18.0f), 1.05f, 3.2f, turbMat, new Vector3(90f, 0f, 0f), true);
+            Bld.Cyl("LP", g, new Vector3(18.5f, 2.31f, 21.8f), 1.75f, 4.4f, turbMat2, new Vector3(90f, 0f, 0f), true);
+            Bld.Cyl("Generator", g, new Vector3(18.5f, 2.16f, 25.4f), 1.55f, 3.6f,
                       MaterialLibrary.Paint("gen", new Color(0.30f, 0.42f, 0.52f), 0.55f, 0.5f),
                       new Vector3(90f, 0f, 0f), true);
-            Bld.Cyl("Exciter", t, new Vector3(0f, 2.0f, -7.5f), 0.75f, 0.9f, MaterialLibrary.ConsoleTrim);
+            Bld.Cyl("Exciter", g, new Vector3(18.5f, 2.16f, 28.15f), 0.75f, 0.9f, MaterialLibrary.ConsoleTrim,
+                      new Vector3(90f, 0f, 0f), true);
 
-            // конденсатор и трубопроводы
-            Bld.Box("Condenser", g, new Vector3(21.5f, 1.2f, 17.5f), new Vector3(3.0f, 2.4f, 4.0f),
+            // опоры подшипников
+            for (int i = 0; i < 3; i++)
+                Bld.Box("Pedestal", g, new Vector3(18.5f, 1.06f, 19.9f + i * 3.4f), new Vector3(1.9f, 0.45f, 0.5f),
+                          MaterialLibrary.ConsoleTrim, true);
+
+            // конденсатор справа, в стороне от прохода
+            Bld.Box("Condenser", g, new Vector3(23.6f, 1.2f, 18.6f), new Vector3(3.2f, 2.4f, 4.2f),
                       MaterialLibrary.Paint("cond", new Color(0.36f, 0.40f, 0.42f), 0.5f, 0.4f));
-            for (int i = 0; i < 2; i++)
-                Bld.Cyl("SteamLine", g, new Vector3(14.6f + i * 1.1f, 8.4f, zc), 0.32f, depth - 1.5f,
-                          MaterialLibrary.Paint("hpsteam", new Color(0.62f, 0.58f, 0.52f), 0.5f, 0.5f),
-                          new Vector3(90f, 0f, 0f), true);
+            Bld.Cyl("CondPipe", g, new Vector3(21.9f, 1.3f, 18.6f), 0.35f, 2.6f,
+                      MaterialLibrary.Chrome, new Vector3(0f, 0f, 90f), true);
 
-            // мостовой кран машинного зала
+            // паропроводы под потолком
+            var steam = MaterialLibrary.Paint("hpsteam", new Color(0.62f, 0.58f, 0.52f), 0.5f, 0.5f);
+            for (int i = 0; i < 2; i++)
+                Bld.Cyl("SteamLine", g, new Vector3(17.4f + i * 2.4f, 8.4f, zc), 0.32f, depth - 2.2f, steam,
+                          new Vector3(90f, 0f, 0f), true);
+            for (int i = 0; i < 2; i++)
+                Bld.Cyl("SteamDrop", g, new Vector3(17.6f + i * 1.8f, 5.7f, 18.9f), 0.3f, 5.6f, steam,
+                          default(Vector3), true);
+
+            // кран-балка
             Bld.Box("CraneRunwayL", g, new Vector3(xc, 10.6f, HallZ0 + 1.2f), new Vector3(x1 - x0, 0.3f, 0.4f),
                       MaterialLibrary.Paint("crane", new Color(0.82f, 0.66f, 0.1f), 0.5f, 0.45f), false);
             Bld.Box("CraneRunwayR", g, new Vector3(xc, 10.6f, HallZ1 - 1.2f), new Vector3(x1 - x0, 0.3f, 0.4f),
                       MaterialLibrary.Paint("crane", new Color(0.82f, 0.66f, 0.1f), 0.5f, 0.45f), false);
+            Bld.Box("CraneBridge", g, new Vector3(18.5f, 10.25f, 16.2f), new Vector3(0.5f, 0.5f, x1 - x0 - 2.4f),
+                      MaterialLibrary.Paint("crane", new Color(0.82f, 0.66f, 0.1f), 0.5f, 0.45f), false);
 
-            // Местный пульт у турбины — настоящие органы: клапан, генератор, читаемые приборы.
-            var aux = Bld.Group("TurbineDesk", g, new Vector3(12.2f, 0f, 15.5f), new Vector3(0f, 90f, 0f)).transform;
+            // местный пульт у входа
+            var aux = Bld.Group("TurbineDesk", g, new Vector3(15.0f, 0f, 13.35f), Vector3.zero).transform;
             Bld.Box("Body", aux, new Vector3(0f, 0.42f, 0f), new Vector3(2.2f, 0.84f, 0.75f), MaterialLibrary.ConsoleBody);
             Bld.Box("Desk", aux, new Vector3(0f, 0.86f, 0f), new Vector3(2.3f, 0.06f, 0.85f), MaterialLibrary.DeskTop);
             Bld.Box("Back", aux, new Vector3(0f, 1.45f, -0.34f), new Vector3(2.2f, 0.75f, 0.08f), MaterialLibrary.PanelFace);
@@ -453,16 +545,20 @@ namespace NPP.Room
                                        "ГЕНЕРАТОР В СЕТЬ", new Color(0.12f, 0.5f, 0.2f));
             PanelFactory.AddPushButton(aux, new Vector3(0.75f, 0.93f, 0.05f), ControlId.Breaker, 0f,
                                        "ОТКЛЮЧИТЬ", new Color(0.55f, 0.12f, 0.1f));
+            Bld.Label(aux, "ПУЛЬТ ТУРБИНЫ №4", new Vector3(0f, 0.55f, 0.39f), 0.075f,
+                        new Color(0.8f, 0.83f, 0.8f), TextAnchor.MiddleCenter, 1.9f);
 
+            // свет 3×2
             for (int i = 0; i < 3; i++)
-                CeilingLamp(g, new Vector3(13f + i * 5.5f, HallHeight - 0.2f, zc - 4f));
-            for (int i = 0; i < 3; i++)
-                CeilingLamp(g, new Vector3(13f + i * 5.5f, HallHeight - 0.2f, zc + 4f));
+            {
+                CeilingLamp(g, new Vector3(13f + i * 5.5f, HallHeight - 0.3f, zc - 4.2f));
+                CeilingLamp(g, new Vector3(13f + i * 5.5f, HallHeight - 0.3f, zc + 4.2f));
+            }
 
-            Sign(g, "МАШИННЫЙ ЗАЛ · ТУРБОАГРЕГАТ №4", new Vector3(xc, HallHeight - 1.2f, HallZ0 + 0.18f), 180f, 0.2f);
+            Sign(g, "МАШИННЫЙ ЗАЛ · ТУРБОАГРЕГАТ №4", new Vector3(xc, HallHeight - 1.7f, HallZ0 + 0.18f), 0f, 0.2f);
             Sign(g, "← РЕАКТОРНЫЙ ЗАЛ", new Vector3(x0 + 0.02f, 4.1f, 21.3f), 90f, 0.12f);
 
-            AddHallHum(g, new Vector3(17f, 2.5f, 20f), 0.9f);
+            AddHallHum(g, new Vector3(18.5f, 3f, 20f), 0.9f);
         }
     }
 

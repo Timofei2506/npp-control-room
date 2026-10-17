@@ -512,8 +512,8 @@ namespace NPP.Room
                       MaterialLibrary.PlasticRed);
             Bld.Cyl("Top", ext.transform, new Vector3(0f, 0.72f, 0.28f), 0.05f, 0.12f,
                       MaterialLibrary.PlasticBlack);
-            Bld.Label(ext.transform, "ОГНЕТУШ.", new Vector3(0f, 0.42f, 0.40f), 0.028f,
-                        new Color(0.95f, 0.9f, 0.8f), TextAnchor.MiddleCenter, 0.2f);
+            Bld.Label(ext.transform, "ОГНЕТУШ.", new Vector3(0f, 0.42f, 0.16f), 0.028f,
+                        new Color(0.95f, 0.9f, 0.8f), TextAnchor.MiddleCenter, 0.2f, 180f);
         }
 
         // =================================================================

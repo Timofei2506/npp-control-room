@@ -117,11 +117,37 @@ namespace NPP.Room
         }
 
         /// <summary>Плоская надпись на панели (гравировка/трафарет).</summary>
-        public static TextMesh Label(Transform parent, string text, Vector3 localPos, float height, Color color, TextAnchor anchor = TextAnchor.MiddleCenter, float maxWidth = 0f)
+        static bool _textMaterialReady;
+
+        /// <summary>
+        /// Встроенный материал шрифта использует «GUI/Text Shader» с ZTest Always: надписи
+        /// просвечивали сквозь стены. Подменяем шейдер на NPP/Text (глубина, альфа-клип).
+        /// Материал — тот же объект, поэтому атлас динамического шрифта продолжает обновляться.
+        /// </summary>
+        public static void EnsureTextMaterial()
         {
+            if (_textMaterialReady) return;
+            Font f = UiFont;
+            if (f == null || f.material == null) return;
+            Shader sh = Shader.Find("NPP/Text");
+            if (sh == null) return;
+            if (f.material.shader != sh) f.material.shader = sh;
+            _textMaterialReady = true;
+        }
+
+        /// <summary>
+        /// Надпись в мире. yaw — направление, куда смотрит лицевая сторона текста
+        /// (0 — в +Z, 180 — в −Z). У TextMesh лицевая сторона противоположна forward,
+        /// поэтому внутри добавляется 180°.
+        /// </summary>
+        public static TextMesh Label(Transform parent, string text, Vector3 localPos, float height, Color color,
+                                     TextAnchor anchor = TextAnchor.MiddleCenter, float maxWidth = 0f, float yaw = 0f)
+        {
+            EnsureTextMaterial();
             var go = new GameObject("L_" + text);
             go.transform.SetParent(parent, false);
             go.transform.localPosition = localPos;
+            go.transform.localRotation = Quaternion.Euler(0f, 180f + yaw, 0f);
             var tm = go.AddComponent<TextMesh>();
             tm.font = UiFont;
             tm.text = text;
