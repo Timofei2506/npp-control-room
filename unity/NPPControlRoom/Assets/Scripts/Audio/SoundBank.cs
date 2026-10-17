@@ -15,7 +15,7 @@ namespace NPP.Audio
         static AudioSource _siren;
 
         static AudioClip _click, _toggle, _press, _knob, _buzzer, _clunk, _step;
-        static AudioClip _ambientClip, _sirenClip;
+        static AudioClip _ambientClip, _sirenClip, _hallHumClip;
 
         static float _volume = 0.8f;
 
@@ -23,6 +23,9 @@ namespace NPP.Audio
 
         /// <summary>Клип гула для позиционных источников в залах (турбина, насосы).</summary>
         public static AudioClip HumClip { get { return _ambientClip; } }
+
+        /// <summary>Гул машинного зала: заметно громче фона, 100 Гц + лопаточный шум.</summary>
+        public static AudioClip HallHumClip { get { return _hallHumClip; } }
 
         public static void Init(GameObject host)
         {
@@ -67,6 +70,16 @@ namespace NPP.Audio
                 float noise = Noise(t) * 0.02f;
                 float slow = 0.85f + 0.15f * Mathf.Sin(2f * Mathf.PI * 0.13f * t);
                 return (hum * 0.05f + noise) * slow;
+            });
+
+            _hallHumClip = Make("hallhum", 6f, t =>
+            {
+                float hum = Mathf.Sin(2f * Mathf.PI * 100f * t) * 0.5f
+                          + Mathf.Sin(2f * Mathf.PI * 200f * t) * 0.22f
+                          + Mathf.Sin(2f * Mathf.PI * 300f * t) * 0.1f;
+                float blades = Noise(t * 7f) * 0.06f;
+                float slow = 0.9f + 0.1f * Mathf.Sin(2f * Mathf.PI * 0.31f * t);
+                return (hum * 0.18f + blades) * slow;
             });
 
             _sirenClip = Make("siren", 2f, t =>

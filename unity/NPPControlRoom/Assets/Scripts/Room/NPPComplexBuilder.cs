@@ -142,7 +142,7 @@ namespace NPP.Room
             go.transform.localPosition = pos;
 
             var src = go.AddComponent<AudioSource>();
-            src.clip = NPP.Audio.SoundBank.HumClip;
+            src.clip = NPP.Audio.SoundBank.HallHumClip ?? NPP.Audio.SoundBank.HumClip;
             if (src.clip == null) { Object.Destroy(go); return; }
             src.loop = true;
             src.spatialBlend = 1f;
@@ -219,6 +219,8 @@ namespace NPP.Room
             WallZ(g, "WallRightTop", ReactorHalfX, doorZ0, doorZ1, doorH, HallHeight);
             Sign(g, "МАШИННЫЙ ЗАЛ →", new Vector3(ReactorHalfX - 0.02f, doorH + 0.45f, (doorZ0 + doorZ1) * 0.5f),
                  -90f, 0.12f);
+            Sign(g, "БЛОЧНЫЙ ЩИТ · КОРИДОР", new Vector3((cz0 + cz1) * 0.5f, CorridorH + 0.42f, HallZ0 + 0.18f),
+                 180f, 0.12f);
 
             // створка между залами: уезжает вдоль стены
             var hd = Bld.Group("HallDoor", g, new Vector3(ReactorHalfX, 0f, (doorZ0 + doorZ1) * 0.5f),
@@ -329,7 +331,7 @@ namespace NPP.Room
             {
                 float a = i / 12f * Mathf.PI * 2f;
                 Bld.Box("BioShield", g, new Vector3(Mathf.Cos(a) * 2.75f, 0.55f, Mathf.Sin(a) * 2.75f),
-                          new Vector3(0.55f, 1.1f, 0.55f), MaterialLibrary.Concrete, false);
+                          new Vector3(0.55f, 1.1f, 0.55f), MaterialLibrary.Concrete, true);
             }
         }
 
@@ -458,6 +460,7 @@ namespace NPP.Room
                 CeilingLamp(g, new Vector3(13f + i * 5.5f, HallHeight - 0.2f, zc + 4f));
 
             Sign(g, "МАШИННЫЙ ЗАЛ · ТУРБОАГРЕГАТ №4", new Vector3(xc, HallHeight - 1.2f, HallZ0 + 0.18f), 180f, 0.2f);
+            Sign(g, "← РЕАКТОРНЫЙ ЗАЛ", new Vector3(x0 + 0.02f, 4.1f, 21.3f), 90f, 0.12f);
 
             AddHallHum(g, new Vector3(17f, 2.5f, 20f), 0.9f);
         }
