@@ -18,7 +18,7 @@ namespace NPP.Net
         readonly ConcurrentQueue<string> _inbox = new ConcurrentQueue<string>();
         readonly ConcurrentQueue<string> _outbox = new ConcurrentQueue<string>();
 
-        public readonly ConcurrentQueue<string> Inbox => _inbox;
+        public ConcurrentQueue<string> Inbox { get { return _inbox; } }
         public volatile bool Connected;
         public volatile string Error;
 

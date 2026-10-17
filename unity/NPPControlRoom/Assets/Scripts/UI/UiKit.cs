@@ -9,7 +9,7 @@ namespace NPP.UI
     /// <summary>Минималистичный набор UGUI-элементов, создаваемых кодом.</summary>
     public static class UiKit
     {
-        public static Font Font { get { return Build.UiFont; } }
+        public static Font Font { get { return Bld.UiFont; } }
 
         public static Canvas MakeCanvas(string name, int order)
         {

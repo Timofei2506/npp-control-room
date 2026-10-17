@@ -138,12 +138,12 @@ namespace NPP.Sim
         public const double ACool = 2.5e-5;
         public const double AXe = 0.004;
 
-        public const double DecayTau = 12.0;
+        public const double DecayTau = 1200.0;
         public const double DecayFrac = 0.07;
 
         public const double RatedMW = 3000.0;
-        public const double HBase = 2.0;
-        public const double HFlow = 7.677;
+        public const double HBase = 0.2;
+        public const double HFlow = 9.477;
         public const double Cf = 60.0;
 
         public const double Kcs = 100.0;
@@ -151,8 +151,8 @@ namespace NPP.Sim
         public const double TsgA = 170.0;
         public const double TsgB = 15.0;
 
-        public const double Csg = 40.0;
-        public const double KTurb = 550.0;
+        public const double Csg = 400.0;
+        public const double KTurb = 555.56;
         public const double KFeed = 180.0;
         public const double Q0 = 2820.0;
 
@@ -206,7 +206,7 @@ namespace NPP.Sim
             Qd = DecayFrac;
             Tf = 600; Tc = 290; Pst = 6.0; Lvl = 50; W = 3000; Xe = 1; I = 1; pel = 0;
             rodTarget = RodRef; rod = RodRef;
-            pumpsMask = 7; pumps = 3; valve = 0.85; feed = 1.0; feedAuto = true;
+            pumpsMask = 7; pumps = 3; valve = 0.9; feed = 1.0; feedAuto = true;
             breaker = true; vent = false;
             scrammed = false; turbineTripped = false; coreDamage = false;
             scramReason = "";
@@ -239,6 +239,8 @@ namespace NPP.Sim
             if (scrammed) return;
             scrammed = true;
             scramReason = reason;
+            turbineTripped = true;
+            breaker = false;
         }
 
         public void Step(double dt)
@@ -253,9 +255,8 @@ namespace NPP.Sim
             // ---- авторегулятор питания ----
             if (feedAuto)
             {
-                double demand = (KTurb * Pst * (turbineTripped ? 0.0 : valve)) / Q0;
-                double trim = 0.014 * (50.0 - Lvl);
-                feed = Clamp(demand * 1.06 + trim, 0.0, 1.6);
+                double steamFlow = (KTurb * Pst * (turbineTripped ? 0.0 : valve)) / Q0;
+                feed = Clamp(steamFlow + 0.02 * (50.0 - Lvl), 0.0, 1.5);
             }
 
             // ---- привод стержней ----
@@ -283,10 +284,9 @@ namespace NPP.Sim
             double h = dt / n;
             for (int i = 0; i < n; i++)
             {
-                double dP = ((rho - Beta) / Lambda) * P + Lam * C;
-                double dC = (Beta / Lambda) * P - Lam * C;
-                P += dP * h;
-                C += dC * h;
+                double aRate = (Beta - rho) / Lambda;      // скорость распада мгновенной компоненты
+                P = (P + Lam * C * h) / (1.0 + aRate * h);  // неявный шаг — не «взрывается»
+                C += ((Beta / Lambda) * P - Lam * C) * h;
                 if (P < 1e-6) P = 1e-6;
                 if (P > PMax) P = PMax;
                 if (P > 1.15 && !scrammed) Scram("МОЩНОСТЬ > 115%");
@@ -310,11 +310,10 @@ namespace NPP.Sim
             // ---- парогенератор ----
             double valveEff = turbineTripped ? 0.0 : valve;
             double Qturb = KTurb * Pst * valveEff;
-            double Qfeed = KFeed * feed * (Pst / 6.0);
             double Qrel = 0.0;
             if (vent) Qrel += 300.0 * Math.Max(0.0, Pst - 5.5);
             if (Pst > 7.8) Qrel += 800.0 * (Pst - 7.8);
-            Pst += (Qcs - Qturb - Qfeed - Qrel) / Csg * dt;
+            Pst += (Qcs - Qturb - Qrel) / Csg * dt;
             Pst = Clamp(Pst, 0.1, 9.5);
             Lvl += 1.2 * (feed - Qturb / Q0) * dt;
             Lvl = Clamp(Lvl, 0.0, 100.0);
@@ -362,7 +361,8 @@ namespace NPP.Sim
             alarms = a;
 
             // ---- автоматические защиты ----
-            if (Tf > 1000) Scram("ТЕМПЕРАТУРА ТОПЛИВА > 1000°C");
+            if (Pst < 2.5 && !turbineTripped) { turbineTripped = true; breaker = false; }
+            if (Tf > 1000) { Scram("ТЕМПЕРАТУРА ТОПЛИВА > 1000°C"); coreDamage = true; }
             if (Pst > 8.5) Scram("ДАВЛЕНИЕ ПАРА > 8.5 МПа");
             if (pumpCount < 2) Scram("РАСХОД ТЕПЛОНОСИТЕЛЯ НИЗКИЙ");
             if (Lvl < 15 && !turbineTripped) { turbineTripped = true; breaker = false; }
@@ -374,7 +374,7 @@ namespace NPP.Sim
         public PlantSnapshot Snapshot()
         {
             PlantSnapshot s;
-            s.power = (float)P;
+            s.power = (float)(0.93 * P + Qd);
             s.rod = (float)rod;
             s.rodTarget = (float)rodTarget;
             s.pumps = PumpsCount();

@@ -125,6 +125,9 @@ namespace NPP.UI
                 if (!string.IsNullOrEmpty(url) && !url.StartsWith("ws://") && !url.StartsWith("wss://"))
                     url = "ws://" + url;
                 NetConfig.ServerUrl = url;
+                if (string.IsNullOrEmpty(url)) PlayerPrefs.DeleteKey("npp.server.url");
+                else PlayerPrefs.SetString("npp.server.url", url);
+                PlayerPrefs.Save();
                 CloseSettings();
             }, new Color(0.08f, 0.18f, 0.14f, 1f), 22);
 

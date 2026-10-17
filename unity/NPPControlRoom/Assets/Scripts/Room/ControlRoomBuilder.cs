@@ -37,14 +37,14 @@ namespace NPP.Room
             var wallLower = MaterialLibrary.Paint("wallLower", new Color(0.23f, 0.30f, 0.26f), 0.3f);
             var stripe = MaterialLibrary.Paint("stripe", new Color(0.5f, 0.42f, 0.1f), 0.35f);
 
-            Build.Box("Floor", root, new Vector3(0f, -0.1f, 0f), new Vector3(13f, 0.2f, 11f), MaterialLibrary.Floor);
-            Build.Box("Ceiling", root, new Vector3(0f, 3.62f, 0f), new Vector3(13f, 0.25f, 11f), MaterialLibrary.Ceiling);
+            Bld.Box("Floor", root, new Vector3(0f, -0.1f, 0f), new Vector3(13f, 0.2f, 11f), MaterialLibrary.Floor);
+            Bld.Box("Ceiling", root, new Vector3(0f, 3.62f, 0f), new Vector3(13f, 0.25f, 11f), MaterialLibrary.Ceiling);
 
             // стены
-            Build.Box("WallBack", root, new Vector3(0f, 1.75f, 5.65f), new Vector3(13f, 3.5f, 0.3f), MaterialLibrary.Wall);
-            Build.Box("WallFront", root, new Vector3(0f, 1.75f, -5.65f), new Vector3(13f, 3.5f, 0.3f), MaterialLibrary.Wall);
-            Build.Box("WallLeft", root, new Vector3(-6.65f, 1.75f, 0f), new Vector3(0.3f, 3.5f, 11f), MaterialLibrary.Wall);
-            Build.Box("WallRight", root, new Vector3(6.65f, 1.75f, 0f), new Vector3(0.3f, 3.5f, 11f), MaterialLibrary.Wall);
+            Bld.Box("WallBack", root, new Vector3(0f, 1.75f, 5.65f), new Vector3(13f, 3.5f, 0.3f), MaterialLibrary.Wall);
+            Bld.Box("WallFront", root, new Vector3(0f, 1.75f, -5.65f), new Vector3(13f, 3.5f, 0.3f), MaterialLibrary.Wall);
+            Bld.Box("WallLeft", root, new Vector3(-6.65f, 1.75f, 0f), new Vector3(0.3f, 3.5f, 11f), MaterialLibrary.Wall);
+            Bld.Box("WallRight", root, new Vector3(6.65f, 1.75f, 0f), new Vector3(0.3f, 3.5f, 11f), MaterialLibrary.Wall);
 
             // нижняя панель стен (тёмная), поясок
             float[][] walls =
@@ -60,23 +60,23 @@ namespace NPP.Room
                 bool side = w[3] > 0.5f;
                 Vector3 sizeLower = side ? new Vector3(0.03f, 1.15f, w[2]) : new Vector3(w[2], 1.15f, 0.03f);
                 Vector3 posLower = side ? new Vector3(w[0], 0.6f, w[1]) : new Vector3(w[0], 0.6f, w[1] + 0.001f);
-                Build.Box("WallLower", root, posLower, sizeLower, wallLower, false);
+                Bld.Box("WallLower", root, posLower, sizeLower, wallLower, false);
 
                 Vector3 sizeStripe = side ? new Vector3(0.035f, 0.06f, w[2]) : new Vector3(w[2], 0.06f, 0.035f);
                 Vector3 posStripe = side ? new Vector3(w[0], 1.2f, w[1]) : new Vector3(w[0], 1.2f, w[1]);
-                Build.Box("WallStripe", root, posStripe, sizeStripe, stripe, false);
+                Bld.Box("WallStripe", root, posStripe, sizeStripe, stripe, false);
 
                 // плинтус
                 Vector3 sizeBase = side ? new Vector3(0.06f, 0.09f, w[2]) : new Vector3(w[2], 0.09f, 0.06f);
                 Vector3 posBase = side ? new Vector3(w[0], 0.045f, w[1]) : new Vector3(w[0], 0.045f, w[1]);
-                Build.Box("Baseboard", root, posBase, sizeBase, MaterialLibrary.ConsoleTrim, false);
+                Bld.Box("Baseboard", root, posBase, sizeBase, MaterialLibrary.ConsoleTrim, false);
             }
 
             // потолочные балки
             for (int i = 0; i < 3; i++)
             {
                 float z = -3.6f + i * 3.6f;
-                Build.Box("Beam", root, new Vector3(0f, 3.44f, z), new Vector3(13f, 0.22f, 0.22f),
+                Bld.Box("Beam", root, new Vector3(0f, 3.44f, z), new Vector3(13f, 0.22f, 0.22f),
                           MaterialLibrary.Concrete, false);
             }
 
@@ -84,11 +84,11 @@ namespace NPP.Room
             for (int i = 0; i < 2; i++)
             {
                 float z = 1.4f - i * 2.2f;
-                var grp = Build.Group("Vent", root, new Vector3(6.46f, 2.55f, z), new Vector3(0f, -90f, 0f));
-                Build.Box("Frame", grp.transform, Vector3.zero, new Vector3(1.1f, 0.55f, 0.04f),
+                var grp = Bld.Group("Vent", root, new Vector3(6.46f, 2.55f, z), new Vector3(0f, -90f, 0f));
+                Bld.Box("Frame", grp.transform, Vector3.zero, new Vector3(1.1f, 0.55f, 0.04f),
                           MaterialLibrary.ConsoleTrim, false);
                 for (int k = 0; k < 6; k++)
-                    Build.Box("Slat", grp.transform, new Vector3(0f, -0.22f + k * 0.088f, 0.026f),
+                    Bld.Box("Slat", grp.transform, new Vector3(0f, -0.22f + k * 0.088f, 0.026f),
                               new Vector3(1.0f, 0.03f, 0.01f), MaterialLibrary.Chrome, false);
             }
         }
@@ -113,10 +113,10 @@ namespace NPP.Room
             for (int i = 0; i < xs.Length; i++)
                 for (int j = 0; j < zs.Length; j++)
                 {
-                    var fx = Build.Group("CeilFixture", root, new Vector3(xs[i], 3.46f, zs[j]), Vector3.zero);
-                    var panel = Build.Box("Panel", fx.transform, Vector3.zero, new Vector3(1.5f, 0.07f, 0.45f),
+                    var fx = Bld.Group("CeilFixture", root, new Vector3(xs[i], 3.46f, zs[j]), Vector3.zero);
+                    var panel = Bld.Box("Panel", fx.transform, Vector3.zero, new Vector3(1.5f, 0.07f, 0.45f),
                                           MaterialLibrary.Lamp(new Color(1f, 0.97f, 0.9f), 1.0f), false);
-                    Build.Box("Housing", fx.transform, new Vector3(0f, 0.05f, 0f), new Vector3(1.62f, 0.06f, 0.56f),
+                    Bld.Box("Housing", fx.transform, new Vector3(0f, 0.05f, 0f), new Vector3(1.62f, 0.06f, 0.56f),
                               MaterialLibrary.ConsoleTrim, false);
 
                     var lightGo = new GameObject("Light");
@@ -152,7 +152,7 @@ namespace NPP.Room
         // =================================================================
         static void BuildReactorConsole(Transform root)
         {
-            var grp = Build.Group("ReactorConsole", root, new Vector3(-3.15f, 0f, -1.05f), new Vector3(0f, 18f, 0f));
+            var grp = Bld.Group("ReactorConsole", root, new Vector3(-3.15f, 0f, -1.05f), new Vector3(0f, 18f, 0f));
             Transform face, deck;
             PanelFactory.MakeConsole(grp.transform, Vector3.zero, 0f, 2.9f, out face, out deck);
             AddConsoleLamp(grp.transform);
@@ -195,12 +195,12 @@ namespace NPP.Room
 
             PanelFactory.AddToggle(deck, new Vector3(0.26f, 0.01f, 0.014f), ControlId.Vent, "БРУ-А");
 
-            var scram = Build.Group("AZ5Mount", deck, new Vector3(0.92f, 0.0f, 0.014f), Vector3.zero);
+            var scram = Bld.Group("AZ5Mount", deck, new Vector3(0.92f, 0.0f, 0.014f), Vector3.zero);
             scram.transform.localScale = new Vector3(0.82f, 0.82f, 0.82f);
             PanelFactory.AddScramStation(scram.transform, Vector3.zero);
 
             // гравировка на кромке стола
-            Build.Label(grp.transform, "ПУЛЬТ УПРАВЛЕНИЯ РЕАКТОРОМ", new Vector3(0f, 0.72f, 0.49f),
+            Bld.Label(grp.transform, "ПУЛЬТ УПРАВЛЕНИЯ РЕАКТОРОМ", new Vector3(0f, 0.72f, 0.49f),
                         0.045f, new Color(0.55f, 0.57f, 0.54f), TextAnchor.MiddleCenter, 2.4f);
 
             AddFloorMark(grp.transform, 3.2f);
@@ -212,7 +212,7 @@ namespace NPP.Room
         // =================================================================
         static void BuildTurbineConsole(Transform root)
         {
-            var grp = Build.Group("TurbineConsole", root, new Vector3(3.15f, 0f, -1.05f), new Vector3(0f, -18f, 0f));
+            var grp = Bld.Group("TurbineConsole", root, new Vector3(3.15f, 0f, -1.05f), new Vector3(0f, -18f, 0f));
             Transform face, deck;
             PanelFactory.MakeConsole(grp.transform, Vector3.zero, 0f, 2.9f, out face, out deck);
             AddConsoleLamp(grp.transform);
@@ -256,7 +256,7 @@ namespace NPP.Room
             PanelFactory.AddToggle(deck, new Vector3(-0.13f, 0.01f, 0.014f), ControlId.FeedAuto, "АВТО УРОВНЯ");
             PanelFactory.AddToggle(deck, new Vector3(0.45f, 0.01f, 0.014f), ControlId.Breaker, "ГЕНЕРАТОР");
 
-            Build.Label(grp.transform, "ПУЛЬТ УПРАВЛЕНИЯ ТУРБИНОЙ", new Vector3(0f, 0.72f, 0.49f),
+            Bld.Label(grp.transform, "ПУЛЬТ УПРАВЛЕНИЯ ТУРБИНОЙ", new Vector3(0f, 0.72f, 0.49f),
                         0.045f, new Color(0.55f, 0.57f, 0.54f), TextAnchor.MiddleCenter, 2.4f);
 
             AddFloorMark(grp.transform, 3.2f);
@@ -268,13 +268,13 @@ namespace NPP.Room
         // =================================================================
         static void BuildAuxPanel(Transform root)
         {
-            var grp = Build.Group("AuxPanel", root, new Vector3(-6.42f, 1.62f, 1.5f), new Vector3(0f, 90f, 0f));
-            Build.Box("Back", grp.transform, Vector3.zero, new Vector3(1.6f, 1.15f, 0.08f), MaterialLibrary.ConsoleBody);
-            Build.Box("Face", grp.transform, new Vector3(0f, 0f, 0.045f), new Vector3(1.52f, 1.07f, 0.012f),
+            var grp = Bld.Group("AuxPanel", root, new Vector3(-6.42f, 1.62f, 1.5f), new Vector3(0f, 90f, 0f));
+            Bld.Box("Back", grp.transform, Vector3.zero, new Vector3(1.6f, 1.15f, 0.08f), MaterialLibrary.ConsoleBody);
+            Bld.Box("Face", grp.transform, new Vector3(0f, 0f, 0.045f), new Vector3(1.52f, 1.07f, 0.012f),
                       MaterialLibrary.PanelFace, false);
-            var face = Build.Group("Content", grp.transform, new Vector3(0f, 0f, 0.052f), Vector3.zero).transform;
+            var face = Bld.Group("Content", grp.transform, new Vector3(0f, 0f, 0.052f), Vector3.zero).transform;
 
-            Build.Label(face, "ПАНЕЛЬ КИП · РАДИАЦИОННЫЙ КОНТРОЛЬ", new Vector3(0f, 0.46f, 0f), 0.05f,
+            Bld.Label(face, "ПАНЕЛЬ КИП · РАДИАЦИОННЫЙ КОНТРОЛЬ", new Vector3(0f, 0.46f, 0f), 0.05f,
                         new Color(0.85f, 0.86f, 0.8f), TextAnchor.MiddleCenter, 1.4f);
 
             PanelFactory.AddGauge(face, new Vector3(-0.42f, 0.13f, 0f), 0.28f,
@@ -290,10 +290,10 @@ namespace NPP.Room
             PanelFactory.AddResetStation(face, new Vector3(-0.42f, -0.26f, 0f));
 
             // лампа радиации
-            var lampRoot = Build.Group("RadLamp", face, new Vector3(-0.42f, -0.02f, 0.01f), Vector3.zero);
-            var dome = Build.Sphere("Dome", lampRoot.transform, Vector3.zero, new Vector3(0.035f, 0.032f, 0.02f),
+            var lampRoot = Bld.Group("RadLamp", face, new Vector3(-0.42f, -0.02f, 0.01f), Vector3.zero);
+            var dome = Bld.Sphere("Dome", lampRoot.transform, Vector3.zero, new Vector3(0.035f, 0.032f, 0.02f),
                                     MaterialLibrary.Lamp(new Color(0.06f, 0.06f, 0.06f), 0.01f), false);
-            Build.Label(face, "РАДИАЦИЯ", new Vector3(-0.42f, -0.065f, 0.01f), 0.02f,
+            Bld.Label(face, "РАДИАЦИЯ", new Vector3(-0.42f, -0.065f, 0.01f), 0.02f,
                         new Color(0.8f, 0.82f, 0.78f), TextAnchor.MiddleCenter, 0.24f);
             var ind = lampRoot.AddComponent<IndicatorLamp>();
             ind.dome = dome.GetComponent<Renderer>();
@@ -308,14 +308,14 @@ namespace NPP.Room
         // =================================================================
         static void BuildAnnunciator(Transform root)
         {
-            var grp = Build.Group("Annunciator", root, new Vector3(0f, 2.5f, -5.44f), Vector3.zero);
-            Build.Box("Back", grp.transform, new Vector3(0f, 0f, -0.055f), new Vector3(4.1f, 1.7f, 0.08f),
+            var grp = Bld.Group("Annunciator", root, new Vector3(0f, 2.5f, -5.44f), Vector3.zero);
+            Bld.Box("Back", grp.transform, new Vector3(0f, 0f, -0.055f), new Vector3(4.1f, 1.7f, 0.08f),
                       MaterialLibrary.ConsoleBody);
-            Build.Box("FacePanel", grp.transform, new Vector3(0f, 0f, 0.002f), new Vector3(4.0f, 1.62f, 0.02f),
+            Bld.Box("FacePanel", grp.transform, new Vector3(0f, 0f, 0.002f), new Vector3(4.0f, 1.62f, 0.02f),
                       MaterialLibrary.PanelFace, false);
-            var face = Build.Group("Content", grp.transform, new Vector3(0f, 0f, 0.016f), Vector3.zero).transform;
+            var face = Bld.Group("Content", grp.transform, new Vector3(0f, 0f, 0.016f), Vector3.zero).transform;
 
-            Build.Label(face, "АВАРИЙНАЯ  СИГНАЛИЗАЦИЯ", new Vector3(0f, 0.71f, 0f), 0.075f,
+            Bld.Label(face, "АВАРИЙНАЯ  СИГНАЛИЗАЦИЯ", new Vector3(0f, 0.71f, 0f), 0.075f,
                         new Color(0.9f, 0.75f, 0.35f), TextAnchor.MiddleCenter, 3.2f);
 
             float[] xs = { -1.5f, -0.5f, 0.5f, 1.5f };
@@ -343,9 +343,9 @@ namespace NPP.Room
             PanelFactory.AddAckButton(face, new Vector3(xs[3], ys[3] + 0.02f, 0f));
 
             // сирена над табло
-            var siren = Build.Group("Siren", grp.transform, new Vector3(-1.55f, 1.02f, 0.02f), Vector3.zero);
-            Build.Box("Base", siren.transform, Vector3.zero, new Vector3(0.22f, 0.22f, 0.06f), MaterialLibrary.ConsoleTrim, false);
-            Build.Cyl("Horn", siren.transform, new Vector3(0f, 0f, 0.12f), 0.1f, 0.22f,
+            var siren = Bld.Group("Siren", grp.transform, new Vector3(-1.55f, 1.02f, 0.02f), Vector3.zero);
+            Bld.Box("Base", siren.transform, Vector3.zero, new Vector3(0.22f, 0.22f, 0.06f), MaterialLibrary.ConsoleTrim, false);
+            Bld.Cyl("Horn", siren.transform, new Vector3(0f, 0f, 0.12f), 0.1f, 0.22f,
                       MaterialLibrary.PlasticRed, new Vector3(90f, 0f, 0f));
 
             AddBeacon(grp.transform);
@@ -353,15 +353,15 @@ namespace NPP.Room
 
         static void AddBeacon(Transform parent)
         {
-            var grp = Build.Group("Beacon", parent, new Vector3(1.55f, 1.02f, 0.06f), Vector3.zero);
-            Build.Box("Base", grp.transform, Vector3.zero, new Vector3(0.2f, 0.1f, 0.2f),
+            var grp = Bld.Group("Beacon", parent, new Vector3(1.55f, 1.02f, 0.06f), Vector3.zero);
+            Bld.Box("Base", grp.transform, Vector3.zero, new Vector3(0.2f, 0.1f, 0.2f),
                       MaterialLibrary.ConsoleTrim, false);
 
-            var rot = Build.Group("Rotator", grp.transform, new Vector3(0f, 0.08f, 0f), Vector3.zero);
-            var dome = Build.Sphere("Dome", rot.transform, new Vector3(0f, 0.04f, 0f),
+            var rot = Bld.Group("Rotator", grp.transform, new Vector3(0f, 0.08f, 0f), Vector3.zero);
+            var dome = Bld.Sphere("Dome", rot.transform, new Vector3(0f, 0.04f, 0f),
                                     new Vector3(0.17f, 0.13f, 0.17f),
                                     MaterialLibrary.Lamp(new Color(0.07f, 0.05f, 0.05f), 0.01f), false);
-            Build.Box("Mirror", rot.transform, new Vector3(0.06f, 0.04f, 0f),
+            Bld.Box("Mirror", rot.transform, new Vector3(0.06f, 0.04f, 0f),
                       new Vector3(0.02f, 0.07f, 0.09f), MaterialLibrary.Chrome, false);
 
             var lgo = new GameObject("BeaconLight");
@@ -383,7 +383,7 @@ namespace NPP.Room
         // =================================================================
         static void BuildMimic(Transform root)
         {
-            var grp = Build.Group("MimicStand", root, new Vector3(5.45f, 1.66f, 3.35f), Vector3.zero);
+            var grp = Bld.Group("MimicStand", root, new Vector3(5.45f, 1.66f, 3.35f), Vector3.zero);
             // повернуть к центру помещения
             Vector3 dir = new Vector3(0f, 1.66f, 0f) - grp.transform.position;
             float yaw = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
@@ -397,27 +397,27 @@ namespace NPP.Room
         static void BuildProps(Transform root)
         {
             // дверь (группа повёрнута на 180°, поэтому «в комнату» = локальный +Z)
-            var door = Build.Group("Door", root, new Vector3(-2.4f, 0f, 5.44f), new Vector3(0f, 180f, 0f));
-            Build.Box("Frame", door.transform, new Vector3(0f, 1.16f, 0.02f), new Vector3(1.34f, 2.32f, 0.1f),
+            var door = Bld.Group("Door", root, new Vector3(-2.4f, 0f, 5.44f), new Vector3(0f, 180f, 0f));
+            Bld.Box("Frame", door.transform, new Vector3(0f, 1.16f, 0.02f), new Vector3(1.34f, 2.32f, 0.1f),
                       MaterialLibrary.ConsoleTrim);
-            Build.Box("Leaf", door.transform, new Vector3(0f, 1.13f, 0.09f), new Vector3(1.16f, 2.22f, 0.06f),
+            Bld.Box("Leaf", door.transform, new Vector3(0f, 1.13f, 0.09f), new Vector3(1.16f, 2.22f, 0.06f),
                       MaterialLibrary.DoorSteel);
-            Build.Cyl("Handle", door.transform, new Vector3(0.42f, 1.05f, 0.15f), 0.02f, 0.18f,
+            Bld.Cyl("Handle", door.transform, new Vector3(0.42f, 1.05f, 0.15f), 0.02f, 0.18f,
                       MaterialLibrary.Chrome, new Vector3(0f, 0f, 90f));
-            Build.Box("ExitSign", door.transform, new Vector3(0f, 2.52f, 0.0f), new Vector3(0.62f, 0.2f, 0.04f),
+            Bld.Box("ExitSign", door.transform, new Vector3(0f, 2.52f, 0.0f), new Vector3(0.62f, 0.2f, 0.04f),
                       MaterialLibrary.Lamp(new Color(0.1f, 0.85f, 0.35f), 0.55f), false);
-            Build.Label(door.transform, "ВЫХОД", new Vector3(0f, 2.52f, 0.03f), 0.1f,
+            Bld.Label(door.transform, "ВЫХОД", new Vector3(0f, 2.52f, 0.03f), 0.1f,
                         new Color(0.92f, 1f, 0.92f), TextAnchor.MiddleCenter, 0.55f);
 
             // часы на задней стене
-            var clock = Build.Group("WallClockMount", root, new Vector3(2.2f, 2.95f, 5.42f), Vector3.zero);
+            var clock = Bld.Group("WallClockMount", root, new Vector3(2.2f, 2.95f, 5.42f), Vector3.zero);
             PanelFactory.AddClock(clock.transform, Vector3.zero, new Vector2(0.9f, 0.26f), 180f);
 
             // табличка «БЛОК №4»
-            var plate = Build.Group("RoomPlate", root, new Vector3(-2.4f, 3.25f, 5.44f), new Vector3(0f, 180f, 0f));
-            Build.Box("Plate", plate.transform, Vector3.zero, new Vector3(1.0f, 0.22f, 0.03f),
+            var plate = Bld.Group("RoomPlate", root, new Vector3(-2.4f, 3.25f, 5.44f), new Vector3(0f, 180f, 0f));
+            Bld.Box("Plate", plate.transform, Vector3.zero, new Vector3(1.0f, 0.22f, 0.03f),
                       MaterialLibrary.AluPlate);
-            Build.Label(plate.transform, "БЛОК №4 · ВВЭР-1000", new Vector3(0f, 0f, 0.025f), 0.075f,
+            Bld.Label(plate.transform, "БЛОК №4 · ВВЭР-1000", new Vector3(0f, 0f, 0.025f), 0.075f,
                         new Color(0.14f, 0.14f, 0.14f), TextAnchor.MiddleCenter, 0.92f);
 
             // трубы под потолком у левой стены
@@ -425,25 +425,25 @@ namespace NPP.Room
             {
                 float x = -6.25f + i * 0.17f;
                 float y = 3.15f - i * 0.12f;
-                Build.Cyl("Pipe", root, new Vector3(x, y, 0f), 0.06f, 10.6f,
+                Bld.Cyl("Pipe", root, new Vector3(x, y, 0f), 0.06f, 10.6f,
                           i == 0 ? MaterialLibrary.Chrome : MaterialLibrary.Paint("pipe", new Color(0.55f, 0.32f, 0.22f), 0.4f, 0.6f),
                           new Vector3(90f, 0f, 0f));
                 for (int k = 0; k < 5; k++)
-                    Build.Cyl("Flange", root, new Vector3(x, y, -4.4f + k * 2.2f), 0.085f, 0.06f,
+                    Bld.Cyl("Flange", root, new Vector3(x, y, -4.4f + k * 2.2f), 0.085f, 0.06f,
                               MaterialLibrary.ConsoleTrim, new Vector3(90f, 0f, 0f));
             }
 
             // кабельный лоток
-            Build.Box("CableTray", root, new Vector3(1.8f, 3.32f, 0f), new Vector3(0.42f, 0.06f, 10.4f),
+            Bld.Box("CableTray", root, new Vector3(1.8f, 3.32f, 0f), new Vector3(0.42f, 0.06f, 10.4f),
                       MaterialLibrary.ConsoleTrim, false);
             for (int i = 0; i < 12; i++)
-                Build.Box("Cable", root, new Vector3(1.8f + (i % 3 - 1) * 0.1f, 3.36f, -5f + i * 0.9f),
+                Bld.Box("Cable", root, new Vector3(1.8f + (i % 3 - 1) * 0.1f, 3.36f, -5f + i * 0.9f),
                           new Vector3(0.05f, 0.03f, 0.85f),
                           MaterialLibrary.Paint("cable" + (i % 3), i % 3 == 0 ? new Color(0.1f, 0.1f, 0.12f) : new Color(0.2f, 0.2f, 0.22f), 0.2f), false);
 
             // плакат с инструкцией
-            var poster = Build.Group("Poster", root, new Vector3(6.46f, 1.9f, -1.6f), new Vector3(0f, -90f, 0f));
-            Build.Box("Sheet", poster.transform, Vector3.zero, new Vector3(1.25f, 0.95f, 0.02f),
+            var poster = Bld.Group("Poster", root, new Vector3(6.46f, 1.9f, -1.6f), new Vector3(0f, -90f, 0f));
+            Bld.Box("Sheet", poster.transform, Vector3.zero, new Vector3(1.25f, 0.95f, 0.02f),
                       MaterialLibrary.Paint("paper", new Color(0.88f, 0.87f, 0.82f), 0.1f), false);
             string[] lines =
             {
@@ -458,21 +458,21 @@ namespace NPP.Room
             for (int i = 0; i < lines.Length; i++)
             {
                 if (string.IsNullOrEmpty(lines[i])) continue;
-                Build.Label(poster.transform, lines[i], new Vector3(0f, 0.36f - i * 0.115f, 0.014f),
+                Bld.Label(poster.transform, lines[i], new Vector3(0f, 0.36f - i * 0.115f, 0.014f),
                             i == 0 ? 0.062f : 0.048f,
                             i == 0 ? new Color(0.55f, 0.08f, 0.06f) : new Color(0.12f, 0.12f, 0.12f),
                             TextAnchor.MiddleCenter, 1.15f);
             }
 
             // огнетушитель
-            var ext = Build.Group("Extinguisher", root, new Vector3(6.3f, 0f, 4.75f), Vector3.zero);
-            Build.Box("Bracket", ext.transform, new Vector3(0f, 0.55f, 0.16f), new Vector3(0.1f, 0.5f, 0.08f),
+            var ext = Bld.Group("Extinguisher", root, new Vector3(6.3f, 0f, 4.75f), Vector3.zero);
+            Bld.Box("Bracket", ext.transform, new Vector3(0f, 0.55f, 0.16f), new Vector3(0.1f, 0.5f, 0.08f),
                       MaterialLibrary.ConsoleTrim, false);
-            Build.Cyl("Body", ext.transform, new Vector3(0f, 0.42f, 0.28f), 0.11f, 0.52f,
+            Bld.Cyl("Body", ext.transform, new Vector3(0f, 0.42f, 0.28f), 0.11f, 0.52f,
                       MaterialLibrary.PlasticRed);
-            Build.Cyl("Top", ext.transform, new Vector3(0f, 0.72f, 0.28f), 0.05f, 0.12f,
+            Bld.Cyl("Top", ext.transform, new Vector3(0f, 0.72f, 0.28f), 0.05f, 0.12f,
                       MaterialLibrary.PlasticBlack);
-            Build.Label(ext.transform, "ОГНЕТУШ.", new Vector3(0f, 0.42f, 0.40f), 0.028f,
+            Bld.Label(ext.transform, "ОГНЕТУШ.", new Vector3(0f, 0.42f, 0.40f), 0.028f,
                         new Color(0.95f, 0.9f, 0.8f), TextAnchor.MiddleCenter, 0.2f);
         }
 
@@ -503,14 +503,14 @@ namespace NPP.Room
             for (int i = 0; i < defs.Length; i++)
             {
                 var d = defs[i];
-                var lampRoot = Build.Group("Lamp_" + d.caption, face,
+                var lampRoot = Bld.Group("Lamp_" + d.caption, face,
                     new Vector3(startX + i * spacing, center.y, 0.004f), Vector3.zero);
-                var dome = Build.Sphere("Dome", lampRoot.transform, Vector3.zero,
+                var dome = Bld.Sphere("Dome", lampRoot.transform, Vector3.zero,
                                         new Vector3(0.032f, 0.028f, 0.02f),
                                         MaterialLibrary.Lamp(new Color(0.06f, 0.06f, 0.06f), 0.01f), false);
-                Build.Cyl("Ring", lampRoot.transform, new Vector3(0f, 0f, -0.004f), 0.02f, 0.01f,
+                Bld.Cyl("Ring", lampRoot.transform, new Vector3(0f, 0f, -0.004f), 0.02f, 0.01f,
                           MaterialLibrary.Chrome, new Vector3(90f, 0f, 0f));
-                Build.Label(lampRoot.transform, d.caption, new Vector3(0f, -0.043f, 0.004f), 0.019f,
+                Bld.Label(lampRoot.transform, d.caption, new Vector3(0f, -0.043f, 0.004f), 0.019f,
                             new Color(0.75f, 0.77f, 0.72f), TextAnchor.MiddleCenter, 0.34f);
 
                 var ind = lampRoot.AddComponent<IndicatorLamp>();
@@ -526,14 +526,14 @@ namespace NPP.Room
 
         static void AddConsoleLamp(Transform console)
         {
-            Build.Cyl("LampRodL", console, new Vector3(-0.4f, 1.86f, 0.02f), 0.012f, 0.34f,
+            Bld.Cyl("LampRodL", console, new Vector3(-0.4f, 1.86f, 0.02f), 0.012f, 0.34f,
                       MaterialLibrary.ConsoleTrim);
-            Build.Cyl("LampRodR", console, new Vector3(0.4f, 1.86f, 0.02f), 0.012f, 0.34f,
+            Bld.Cyl("LampRodR", console, new Vector3(0.4f, 1.86f, 0.02f), 0.012f, 0.34f,
                       MaterialLibrary.ConsoleTrim);
-            var hood = Build.Box("LampHood", console, new Vector3(0f, 2.02f, 0.05f), new Vector3(1.05f, 0.05f, 0.16f),
+            var hood = Bld.Box("LampHood", console, new Vector3(0f, 2.02f, 0.05f), new Vector3(1.05f, 0.05f, 0.16f),
                                  MaterialLibrary.ConsoleTrim, false);
             hood.transform.localEulerAngles = new Vector3(12f, 0f, 0f);
-            Build.Box("LampStrip", console, new Vector3(0f, 2.0f, 0.1f), new Vector3(0.95f, 0.02f, 0.1f),
+            Bld.Box("LampStrip", console, new Vector3(0f, 2.0f, 0.1f), new Vector3(0.95f, 0.02f, 0.1f),
                       MaterialLibrary.Lamp(new Color(1f, 0.85f, 0.6f), 0.9f), false);
 
             var lightGo = new GameObject("ConsoleLight");
@@ -549,28 +549,28 @@ namespace NPP.Room
 
         static void AddFloorMark(Transform console, float width)
         {
-            Build.Box("FloorMark", console, new Vector3(0f, 0.006f, 0.72f), new Vector3(width * 0.85f, 0.004f, 0.5f),
+            Bld.Box("FloorMark", console, new Vector3(0f, 0.006f, 0.72f), new Vector3(width * 0.85f, 0.004f, 0.5f),
                       MaterialLibrary.Paint("mark", new Color(0.62f, 0.52f, 0.12f), 0.2f), false);
         }
 
         static void AddChair(Transform console, Vector3 pos, float yaw)
         {
-            var chair = Build.Group("Chair", console, pos, new Vector3(0f, yaw, 0f));
-            Build.Cyl("Column", chair.transform, new Vector3(0f, 0.22f, 0f), 0.035f, 0.44f, MaterialLibrary.Chrome);
+            var chair = Bld.Group("Chair", console, pos, new Vector3(0f, yaw, 0f));
+            Bld.Cyl("Column", chair.transform, new Vector3(0f, 0.22f, 0f), 0.035f, 0.44f, MaterialLibrary.Chrome);
             for (int i = 0; i < 5; i++)
             {
                 float a = i * 72f * Mathf.Deg2Rad;
-                var leg = Build.Box("Leg", chair.transform,
+                var leg = Bld.Box("Leg", chair.transform,
                     new Vector3(Mathf.Sin(a) * 0.17f, 0.03f, Mathf.Cos(a) * 0.17f),
                     new Vector3(0.055f, 0.03f, 0.32f), MaterialLibrary.ConsoleTrim, false);
                 leg.transform.localEulerAngles = new Vector3(0f, -i * 72f, 0f);
             }
-            Build.Box("Seat", chair.transform, new Vector3(0f, 0.47f, 0f), new Vector3(0.46f, 0.08f, 0.44f),
+            Bld.Box("Seat", chair.transform, new Vector3(0f, 0.47f, 0f), new Vector3(0.46f, 0.08f, 0.44f),
                       MaterialLibrary.RubberBlack);
-            var back = Build.Box("Back", chair.transform, new Vector3(0f, 0.72f, 0.21f), new Vector3(0.44f, 0.42f, 0.06f),
+            var back = Bld.Box("Back", chair.transform, new Vector3(0f, 0.72f, 0.21f), new Vector3(0.44f, 0.42f, 0.06f),
                                  MaterialLibrary.RubberBlack);
             back.transform.localEulerAngles = new Vector3(-8f, 0f, 0f);
-            Build.Sphere("BackTop", chair.transform, new Vector3(0f, 0.93f, 0.24f),
+            Bld.Sphere("BackTop", chair.transform, new Vector3(0f, 0.93f, 0.24f),
                          new Vector3(0.44f, 0.06f, 0.06f), MaterialLibrary.RubberBlack, false);
         }
     }

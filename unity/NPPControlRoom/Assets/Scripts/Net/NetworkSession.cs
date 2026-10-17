@@ -51,6 +51,7 @@ namespace NPP.Net
         float _connectDeadline;
         float _lastPing;
         bool _joined;
+        bool _joinSent;
         bool _wasConnected;
 
         public bool Connected => _relay.Connected;
@@ -85,6 +86,7 @@ namespace NPP.Net
             Role = NetRole.Offline;
             Phase = NetPhase.Connecting;
             _joined = false;
+            _joinSent = false;
             Peers.Clear();
             Chat.Clear();
             PingMs = -1;
@@ -111,6 +113,7 @@ namespace NPP.Net
             }
             _relay.Close();
             _wasConnected = false;
+            _joinSent = false;
             Phase = NetPhase.Idle;
             Role = NetRole.Offline;
             Peers.Clear();
@@ -123,6 +126,16 @@ namespace NPP.Net
             {
                 if (!_joined && Time.realtimeSinceStartup > _connectDeadline)
                     Fail(Connected ? "Сервер не подтвердил вход (комната занята?)" : "Не удалось подключиться к серверу");
+            }
+
+            // как только сокет открыт — представляемся серверу (иначе он не пришлёт joined)
+            if (!_joinSent && Phase == NetPhase.Connecting && _relay.Connected)
+            {
+                _joinSent = true;
+                _relay.Send(MiniJson.Serialize(new Dictionary<string, object>
+                {
+                    { "t", "join" }, { "name", PlayerName }
+                }));
             }
 
             // обрыв уже установленного соединения обрабатываем на главном потоке

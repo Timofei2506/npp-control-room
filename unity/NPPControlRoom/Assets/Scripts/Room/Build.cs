@@ -3,7 +3,7 @@ using UnityEngine;
 namespace NPP.Room
 {
     /// <summary>Хелперы для процедурной сборки геометрии и надписей.</summary>
-    public static class Build
+    public static class Bld
     {
         static Font _font;
         static Font _fontMono;

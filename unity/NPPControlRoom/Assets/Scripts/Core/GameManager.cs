@@ -335,7 +335,6 @@ namespace NPP.Core
         {
             if (Role == NetRole.Guest && State == AppState.Playing)
             {
-                Toast("Сессия завершена: " + message);
                 LeaveToMenu();
                 if (Menu != null) Menu.SetStatus("Сессия завершена: " + message, true);
             }
