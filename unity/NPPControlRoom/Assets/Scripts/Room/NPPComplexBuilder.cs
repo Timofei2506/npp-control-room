@@ -259,7 +259,7 @@ namespace NPP.Room
                 CeilingLamp(g, new Vector3(5f, HallHeight - 0.2f, 15.5f + i * 6f));
             }
 
-            Sign(g, "РЕАКТОРНЫЙ ЗАЛ · БЛОК №4", new Vector3(0f, HallHeight - 1.2f, HallZ0 + 0.18f), 0f, 0.22f);
+            Sign(g, "РЕАКТОРНЫЙ ЗАЛ · БЛОК №4", new Vector3(0f, HallHeight - 1.2f, HallZ0 + 0.18f), 180f, 0.22f);
 
             AddHallHum(g, new Vector3(-3f, 2.2f, 18f), 0.7f);
             AddHallHum(g, new Vector3(4f, 2.2f, 24f), 0.55f);
@@ -457,7 +457,7 @@ namespace NPP.Room
             for (int i = 0; i < 3; i++)
                 CeilingLamp(g, new Vector3(13f + i * 5.5f, HallHeight - 0.2f, zc + 4f));
 
-            Sign(g, "МАШИННЫЙ ЗАЛ · ТУРБОАГРЕГАТ №4", new Vector3(xc, HallHeight - 1.2f, HallZ0 + 0.18f), 0f, 0.2f);
+            Sign(g, "МАШИННЫЙ ЗАЛ · ТУРБОАГРЕГАТ №4", new Vector3(xc, HallHeight - 1.2f, HallZ0 + 0.18f), 180f, 0.2f);
 
             AddHallHum(g, new Vector3(17f, 2.5f, 20f), 0.9f);
         }

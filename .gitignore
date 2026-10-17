@@ -50,3 +50,6 @@ wrangler.toml.local
 *.alf
 *.pem
 *.key
+
+# готовые сборки не храним в репозитории
+releases/
