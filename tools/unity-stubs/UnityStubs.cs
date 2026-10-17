@@ -382,6 +382,9 @@ namespace UnityEngine
         public float spatialBlend { get; set; }
         public float volume { get; set; }
         public float pitch { get; set; }
+        public float minDistance { get; set; }
+        public float maxDistance { get; set; }
+        public AudioRolloffMode rolloffMode { get; set; }
         public AudioClip clip { get; set; }
         public bool isPlaying { get { return false; } }
         public void Play() { }
@@ -389,6 +392,8 @@ namespace UnityEngine
         public void PlayOneShot(AudioClip clip) { }
         public void PlayOneShot(AudioClip clip, float volumeScale) { }
     }
+
+    public enum AudioRolloffMode { Logarithmic, Linear, Custom }
 
     public class AudioListener : Behaviour { }
 

@@ -21,6 +21,9 @@ namespace NPP.Audio
 
         public static bool Ready { get; private set; }
 
+        /// <summary>Клип гула для позиционных источников в залах (турбина, насосы).</summary>
+        public static AudioClip HumClip { get { return _ambientClip; } }
+
         public static void Init(GameObject host)
         {
             if (Ready) return;

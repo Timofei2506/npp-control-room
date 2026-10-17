@@ -93,7 +93,16 @@ namespace NPP.Room
                       MaterialLibrary.ConsoleTrim, false);
             Bld.Box("LampPanel", p, pos - new Vector3(0f, 0.02f, 0f), new Vector3(0.62f, 0.03f, 0.18f),
                       MaterialLibrary.Lamp(new Color(1f, 0.96f, 0.86f), 1.15f), false);
-            Bld.AddPointLight(p, pos + new Vector3(0f, -0.12f, 0f), new Color(1f, 0.95f, 0.85f), 1.15f, 11f);
+            var lgo = new GameObject("HallLight");
+            lgo.transform.SetParent(p, false);
+            lgo.transform.localPosition = pos + new Vector3(0f, -0.12f, 0f);
+            var l = lgo.AddComponent<Light>();
+            l.type = LightType.Point;
+            l.color = new Color(1f, 0.95f, 0.85f);
+            l.intensity = 1.15f;
+            l.range = 11f;
+            l.shadows = LightShadows.None;      // в залах много ламп: тени только у щита
+            l.renderMode = LightRenderMode.ForceVertex;
         }
 
         static void Railing(Transform p, string name, Vector3 a, Vector3 b, float height = 1.05f)
@@ -123,6 +132,26 @@ namespace NPP.Room
                 Bld.Box("Post", g.transform, pos, new Vector3(0.05f, height, 0.05f),
                           MaterialLibrary.Paint("rail", new Color(0.75f, 0.55f, 0.12f), 0.5f, 0.4f), false);
             }
+        }
+
+        /// <summary>Позиционный низкий гул (турбина/насосы): слышно по мере приближения.</summary>
+        static void AddHallHum(Transform p, Vector3 pos, float volume)
+        {
+            var go = new GameObject("Hum");
+            go.transform.SetParent(p, false);
+            go.transform.localPosition = pos;
+
+            var src = go.AddComponent<AudioSource>();
+            src.clip = NPP.Audio.SoundBank.HumClip;
+            if (src.clip == null) { Object.Destroy(go); return; }
+            src.loop = true;
+            src.spatialBlend = 1f;
+            src.volume = volume;
+            src.playOnAwake = false;
+            src.minDistance = 2.5f;
+            src.maxDistance = 22f;
+            src.rolloffMode = AudioRolloffMode.Linear;
+            src.Play();
         }
 
         // =================================================================
@@ -191,6 +220,17 @@ namespace NPP.Room
             Sign(g, "МАШИННЫЙ ЗАЛ →", new Vector3(ReactorHalfX - 0.02f, doorH + 0.45f, (doorZ0 + doorZ1) * 0.5f),
                  -90f, 0.12f);
 
+            // створка между залами: уезжает вдоль стены
+            var hd = Bld.Group("HallDoor", g, new Vector3(ReactorHalfX, 0f, (doorZ0 + doorZ1) * 0.5f),
+                                 new Vector3(0f, 90f, 0f)).transform;
+            var hleaf = Bld.Box("Leaf", hd, new Vector3(0f, doorH * 0.5f, 0f),
+                                  new Vector3(doorZ1 - doorZ0 - 0.06f, doorH - 0.08f, 0.08f),
+                                  MaterialLibrary.Paint("halldoor", new Color(0.33f, 0.36f, 0.33f), 0.5f, 0.45f));
+            var hslide = hleaf.AddComponent<SlidingDoor>();
+            hslide.openOffset = new Vector3(doorZ1 - doorZ0, 0f, 0f);
+            hslide.openDistance = 3.2f;
+            hslide.speed = 3.2f;
+
             // пол-площадка: приямок вокруг реактора
             BuildReactor(g, new Vector3(0f, 0f, 21f));
 
@@ -219,7 +259,10 @@ namespace NPP.Room
                 CeilingLamp(g, new Vector3(5f, HallHeight - 0.2f, 15.5f + i * 6f));
             }
 
-            Sign(g, "РЕАКТОРНЫЙ ЗАЛ · БЛОК №4", new Vector3(0f, HallHeight - 1.2f, HallZ0 + 0.05f), 180f, 0.22f);
+            Sign(g, "РЕАКТОРНЫЙ ЗАЛ · БЛОК №4", new Vector3(0f, HallHeight - 1.2f, HallZ0 + 0.18f), 0f, 0.22f);
+
+            AddHallHum(g, new Vector3(-3f, 2.2f, 18f), 0.7f);
+            AddHallHum(g, new Vector3(4f, 2.2f, 24f), 0.55f);
 
             // ограждение вокруг реактора
             float r = 3.6f;
@@ -300,9 +343,9 @@ namespace NPP.Room
             Bld.Cyl("Base", g, new Vector3(0f, 0.15f, 0f), 1.35f, 0.3f, MaterialLibrary.Concrete);
 
             // паропровод к машинному залу
-            Bld.Cyl("SteamPipe", g, new Vector3(0f, 6.2f, 0.9f), 0.3f, 2.0f,
+            Bld.Cyl("SteamPipe", g, new Vector3(1.05f, 6.2f, 0f), 0.3f, 1.9f,
                       MaterialLibrary.Paint("hpsteam", new Color(0.62f, 0.58f, 0.52f), 0.5f, 0.5f),
-                      new Vector3(90f, 0f, 0f), true);
+                      new Vector3(0f, 0f, 90f), true);
 
             Bld.Label(g.transform, "ПГ-" + (idx + 1), new Vector3(0f, 3.4f, -1.18f), 0.2f,
                         new Color(0.9f, 0.9f, 0.86f), TextAnchor.MiddleCenter, 0.9f);
@@ -414,7 +457,9 @@ namespace NPP.Room
             for (int i = 0; i < 3; i++)
                 CeilingLamp(g, new Vector3(13f + i * 5.5f, HallHeight - 0.2f, zc + 4f));
 
-            Sign(g, "МАШИННЫЙ ЗАЛ · ТУРБОАГРЕГАТ №4", new Vector3(xc, HallHeight - 1.2f, HallZ0 + 0.05f), 180f, 0.2f);
+            Sign(g, "МАШИННЫЙ ЗАЛ · ТУРБОАГРЕГАТ №4", new Vector3(xc, HallHeight - 1.2f, HallZ0 + 0.18f), 0f, 0.2f);
+
+            AddHallHum(g, new Vector3(17f, 2.5f, 20f), 0.9f);
         }
     }
 

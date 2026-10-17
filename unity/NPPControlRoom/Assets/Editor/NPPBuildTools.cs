@@ -110,6 +110,11 @@ namespace NPP.EditorTools
                 throw new Exception("[NPP] Сборка не удалась: " + report.summary.result);
 
             Debug.Log("[NPP] CI build OK: " + exe + " (" + (report.summary.totalSize / (1024 * 1024)) + " МБ)");
+
+            // game-ci CLI ищет в логе ровно эту строку (UnityBuildValidation.validateBuild).
+            // Unity 6 печатает "Build succeeded" без "!", из-за чего валидатор ложно валит
+            // успешную сборку. Печатаем маркер сами — только при BuildResult.Succeeded.
+            Debug.Log("Build succeeded!");
         }
 
         static string ArgValue(string name, string fallback)
