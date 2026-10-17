@@ -35,37 +35,46 @@ jobs:
     name: Проверка секретов Unity
     runs-on: ubuntu-latest
     steps:
-      - name: Проверить наличие лицензии
+      - name: Проверить наличие учётных данных Unity
         env:
           LIC: ${{ secrets.UNITY_LICENSE }}
           SERIAL: ${{ secrets.UNITY_SERIAL }}
           EMAIL: ${{ secrets.UNITY_EMAIL }}
           PASS: ${{ secrets.UNITY_PASSWORD }}
         run: |
+          # Для Personal достаточно почты и пароля: GameCI активирует место через
+          # Unity Licensing Client (--include-personal). Файл .ulf нужен только
+          # для Enterprise/Industry, серийник — для Plus/Pro.
           missing=""
           [ -z "$EMAIL" ] && missing="$missing UNITY_EMAIL"
           [ -z "$PASS" ]  && missing="$missing UNITY_PASSWORD"
-          if [ -z "$LIC" ] && [ -z "$SERIAL" ]; then missing="$missing UNITY_LICENSE(или_UNITY_SERIAL)"; fi
 
           if [ -n "$missing" ]; then
-            echo "::error title=Нет лицензии Unity::Не заданы секреты:$missing"
+            echo "::error title=Нет доступа к Unity::Не заданы секреты:$missing"
             {
-              echo "## Сборка не запущена: нет секретов Unity"
+              echo "## Сборка не запущена: нет учётных данных Unity"
               echo ""
               echo "Добавьте в **Settings → Secrets and variables → Actions**:"
               echo ""
-              echo "| Секрет | Что это |"
-              echo "|---|---|"
-              echo "| \`UNITY_EMAIL\` | почта аккаунта Unity |"
-              echo "| \`UNITY_PASSWORD\` | пароль (без спецсимволов) |"
-              echo "| \`UNITY_LICENSE\` | содержимое файла \`Unity_lic.ulf\` (Personal) |"
-              echo "| \`UNITY_SERIAL\` | серийный ключ (только Plus/Pro) |"
+              echo "| Секрет | Обязателен | Что это |"
+              echo "|---|---|---|"
+              echo "| \`UNITY_EMAIL\` | да | почта аккаунта Unity |"
+              echo "| \`UNITY_PASSWORD\` | да | пароль (без спецсимволов) |"
+              echo "| \`UNITY_SERIAL\` | нет | серийник, только Plus/Pro |"
+              echo "| \`UNITY_LICENSE\` | нет | \`.ulf\`, только Enterprise/Industry |"
               echo ""
-              echo "Как получить \`.ulf\` без установки Unity — см. \`docs/CI.md\`."
+              echo "**Для Unity Personal файл \`.ulf\` не нужен** — лицензия поднимается по учётке."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          echo "Секреты на месте: $([ -n "$SERIAL" ] && echo 'Pro/Plus' || echo 'Personal')"
+
+          if [ -n "$SERIAL" ]; then
+            echo "Лицензия: Plus/Pro по серийнику"
+          elif [ -n "$LIC" ]; then
+            echo "Лицензия: файл .ulf (Enterprise/Industry)"
+          else
+            echo "Лицензия: Personal — будет активирована по учётной записи"
+          fi
 
   # ---------------------------------------------------------------------------
   # Сборка
@@ -92,7 +101,8 @@ jobs:
             Library-Win64-
 
       - name: Build
-        uses: game-ci/unity-builder@v4
+        # v6 — обёртка над game-ci/cli, в которой есть активация Personal по учётке.
+        uses: game-ci/unity-builder@v6
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
@@ -100,7 +110,6 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           projectPath: ${{ env.UNITY_PROJECT_PATH }}
-          unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: StandaloneWindows64
           # Наш метод: создаёт сцену, настраивает Player Settings (Mono2x) и собирает exe.
           buildMethod: NPP.EditorTools.NPPBuildTools.BuildCI

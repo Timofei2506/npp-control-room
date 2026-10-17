@@ -37,8 +37,8 @@
 
 Сборка живёт **в GitHub Actions**, локальный Unity не нужен:
 
-1. Один раз добавьте секреты `UNITY_EMAIL`, `UNITY_PASSWORD`, `UNITY_LICENSE`
-   (инструкция — [docs/CI.md](docs/CI.md)).
+1. Один раз добавьте секреты `UNITY_EMAIL` и `UNITY_PASSWORD` от аккаунта Unity
+   (файл `.ulf` для Personal не нужен — подробности в [docs/CI.md](docs/CI.md)).
 2. Каждый пуш в `main` собирает exe; готовый архив — **Actions → Build Windows x64 →
    Artifacts → NPPControlRoom-Windows-x64**. По тегу `v*` создаётся релиз.
 3. Распакуйте zip и запустите `NPPControlRoom.exe` (Windows x64).

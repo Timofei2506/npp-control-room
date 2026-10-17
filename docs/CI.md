@@ -21,56 +21,49 @@ push в main
 Репозиторий публичный, поэтому минуты Actions не тратятся из лимита.
 Первая сборка — 15–25 минут, последующие (с кэшем `Library`) — 5–10.
 
-## Один раз: лицензия Unity
+## Один раз: учётка Unity
 
-Unity не собирает проекты без лицензии — это её правило, обойти нельзя. Есть **два пути**,
-оба не требуют собирать что-либо на своём ПК. Выберите один.
+Unity не собирает без лицензии, но **файл `.ulf` для Unity Personal больше не нужен**:
+Unity убрал ручную активацию Personal, а GameCI научился поднимать Personal-место
+прямо по логину и паролю (через Unity Licensing Client). Поэтому достаточно двух секретов.
 
-### Путь A — GitHub Actions (уже настроен), нужен файл `Unity_lic.ulf`
+**Settings → Secrets and variables → Actions → New repository secret**:
 
-Три секрета в **Settings → Secrets and variables → Actions → New repository secret**:
+| Секрет | Обязателен | Что это |
+|---|---|---|
+| `UNITY_EMAIL` | **да** | почта аккаунта Unity |
+| `UNITY_PASSWORD` | **да** | пароль (лучше без спецсимволов — известная проблема GameCI) |
+| `UNITY_SERIAL` | нет | серийник, только если у вас Unity Plus/Pro |
+| `UNITY_LICENSE` | нет | содержимое `.ulf`, только для Enterprise/Industry |
 
-| Секрет | Что положить |
-|---|---|
-| `UNITY_EMAIL` | почта аккаунта Unity |
-| `UNITY_PASSWORD` | пароль аккаунта (лучше без спецсимволов) |
-| `UNITY_LICENSE` | содержимое файла `Unity_lic.ulf` (Personal) |
-| `UNITY_SERIAL` | вместо `.ulf` — серийник, если у вас Unity Plus/Pro |
+Что произойдёт при сборке:
 
-`Unity_lic.ulf` создаётся один раз через **Unity Hub** (это только лаунчер, ~150 МБ;
-сам Unity Editor и сборка не нужны):
+- заданы только почта и пароль → активируется **Personal**-место, после сборки возвращается;
+- задан `UNITY_SERIAL` → активация **Plus/Pro**;
+- задан `UNITY_LICENSE` → используется файл лицензии (**Enterprise/Industry** или
+  self-hosted раннер с совпадающим `Unity_lic.ulf`).
 
-1. <https://unity.com/download> → Unity Hub → войти в аккаунт Unity.
-2. Hub → **Preferences (⚙) → Licenses → Add → Get a free personal license**.
-   Обязательно нажать **Add** и пройти активацию — иначе файл не появится.
-3. Забрать файл:
-   - Windows: `C:\ProgramData\Unity\Unity_lic.ulf`
-   - macOS: `/Library/Application Support/Unity/Unity_lic.ulf`
-   - Linux: `~/.local/share/unity3d/Unity/Unity_lic.ulf`
-4. Открыть блокнотом, скопировать **всё содержимое** → секрет `UNITY_LICENSE`.
+> ⚠️ Пароль вводите **сами** прямо в GitHub Secrets. Не присылайте его в чат —
+> всё, что попадает в переписку, считается скомпрометированным.
+>
+> Если у аккаунта включена двухфакторная аутентификация, активация по паролю может
+> не пройти — тогда либо временный пароль приложения, либо отдельный аккаунт Unity
+> только для CI, либо путь B ниже.
 
-Лицензия не привязана к версии Unity и к ОС: активировали на Windows — собираем на Linux.
+### Если очень нужен `.ulf` (Enterprise/Industry)
 
-> Ручная активация через `.alf`/`license.unity3d.com/manual` для **Unity Personal больше
-> не поддерживается** (официально: только Enterprise/Industry и legacy-серийники).
-> Поэтому `.ulf` берётся из Unity Hub.
+Только для этих лицензий: Unity Hub → *Preferences → Licenses → Add → Activate with
+license request* → `.alf` → <https://license.unity3d.com/manual> → `.ulf` → вставить
+содержимое в секрет `UNITY_LICENSE`. Для Personal этот путь закрыт со стороны Unity.
 
-### Путь B — Unity Build Automation (совсем без установок)
-
-Если не хочется ставить даже Unity Hub: облачная сборка самой Unity.
+### Путь B — Unity Build Automation (без ключей вообще)
 
 1. <https://cloud.unity.com> → **Build Automation** → подключить этот GitHub-репозиторий.
-2. Создать конфигурацию: target **Windows**, версия **6000.0.58f1**, ветка `main`.
-3. Запустить билд — Unity соберёт exe в своём облаке.
+2. Конфигурация: target **Windows**, ветка `main`, версия определяется из проекта.
+3. Запустить — Unity соберёт exe в своём облаке.
 
-Лимит бесплатного тарифа — **200 Windows-минут в месяц** (сборка этого проекта ~10–15 мин,
-то есть ~15 сборок в месяц). Проект к этому готов: сцена и Build Settings создаются
-pre-build хуком `NPPPreBuild` при любой сборке, отдельная настройка не нужна.
-
-### Чего не будет работать
-
-- «Собрать без Unity» нельзя: игра использует Unity-API, а не только C#.
-- Чужая/публичная лицензия — нарушение EULA и бан аккаунта.
+Бесплатный тариф: **200 Windows-минут в месяц** (сборка ~10–15 мин). Проект готов:
+pre-build хук `NPPPreBuild` сам создаёт сцену и Build Settings.
 
 ## Запуск вручную
 
